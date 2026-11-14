@@ -1,0 +1,2767 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>化學結構式美國專利檢索系統 | US Patent Chemical Structure Search v4.1</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- JSME Chemical Structure Editor Script -->
+  <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            lab: {
+              950: '#071120',
+              900: '#0C1E35',
+              800: '#132F50',
+              700: '#1D4472',
+              600: '#2563EB',
+              500: '#3B82F6',
+              100: '#E0F2FE',
+              50: '#F0F7FF',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 自訂實驗室格線背景與細緻捲軸 */
+    .bg-lab-grid {
+      background-color: #0C1E35;
+      background-image: 
+        radial-gradient(rgba(56, 189, 248, 0.12) 1px, transparent 1px),
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 24px 24px, 48px 48px, 48px 48px;
+    }
+
+    /* 骨架屏呼吸燈動畫 */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite ease-in-out;
+    }
+
+    /* 自訂捲軸樣式 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
+
+  <!-- ==================== 頂部深藍實驗室導覽列 (Header) ==================== -->
+  <header class="bg-lab-grid text-white border-b border-slate-700/80 shadow-lg sticky top-0 z-30">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- 左側品牌與系統名稱 -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20 border border-white/15">
+          <!-- 苯環化學結構 Icon -->
+          <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 20.66 7 20.66 17 12 22 3.34 17 3.34 7 12 2"></polygon>
+            <line x1="12" y1="5.5" x2="17.5" y2="8.7"></line>
+            <line x1="17.5" y1="15.3" x2="12" y2="18.5"></line>
+            <line x1="6.5" y1="15.3" x2="6.5" y2="8.7"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">
+              化學結構式美國專利檢索系統
+            </h1>
+            <span class="px-2 py-0.5 text-[11px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full">
+              v4.1 Normalized ID
+            </span>
+          </div>
+          <p class="text-xs text-slate-300/80 hidden sm:block font-mono">
+            US Patent Chemical Structure Search · Exact / Substructure / 2D Similarity
+          </p>
+        </div>
+      </div>
+
+      <!-- 右側系統連線與引擎狀態徽章 -->
+      <div class="flex items-center space-x-3">
+        <div class="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/70 border border-slate-700/80 text-xs" title="本地 FastAPI /api/patent_details 連線狀態">
+          <span id="fastapi-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="fastapi-status-text" class="font-mono text-slate-200">FastAPI 偵測中...</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/70 border border-slate-700/80 text-xs">
+          <span id="jsme-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="jsme-status-text" class="font-mono text-slate-200">JSME 載入中...</span>
+        </div>
+        <a
+          href="https://pubchem.ncbi.nlm.nih.gov/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-xs font-mono px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-sky-200 border border-white/15 transition flex items-center space-x-1.5"
+        >
+          <span>PubChem PUG REST</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 主內容雙欄工作區 (Main Workspace) ==================== -->
+  <main class="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- ==================== 左側欄：結構輸入與檢索設定區 (5/12) ==================== -->
+      <section class="lg:col-span-5 flex flex-col space-y-5">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden">
+          <!-- 區塊標題列 -->
+          <div class="bg-gradient-to-r from-lab-900 to-lab-800 px-5 py-3.5 flex items-center justify-between text-white">
+            <div class="flex items-center space-x-2.5">
+              <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+              <h2 class="font-bold text-sm sm:text-base tracking-wide">化學結構輸入區 (Structure Input)</h2>
+            </div>
+            <button
+              type="button"
+              onclick="clearCanvasAndInput()"
+              class="text-xs bg-white/10 hover:bg-red-500/30 text-slate-200 hover:text-red-100 px-2.5 py-1 rounded-lg border border-white/15 transition flex items-center space-x-1"
+              title="清空畫布與 SMILES"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+              <span>清空結構</span>
+            </button>
+          </div>
+
+          <div class="p-5 space-y-5">
+            <!-- 1. JSME 化學結構手繪畫布 -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-semibold text-slate-600 flex items-center space-x-1.5">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span>1. JSME 2D 化學結構手繪畫布 (繪製或修改結構將自動轉換為 SMILES)</span>
+                </label>
+                <span id="canvas-sync-indicator" class="hidden text-[11px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  ✓ 已即時同步至 SMILES
+                </span>
+              </div>
+
+              <!-- JSME 容器外框 -->
+              <div class="relative rounded-xl border-2 border-slate-200 bg-white overflow-hidden shadow-inner" style="min-height: 380px;">
+                <div id="jsme_container" class="w-full" style="width: 100%; height: 380px;"></div>
+
+                <!-- 載入中遮罩 -->
+                <div id="jsme-loading-overlay" class="absolute inset-0 bg-slate-50/95 flex flex-col items-center justify-center space-y-2.5 z-10">
+                  <div class="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p class="text-xs font-semibold text-slate-600">正在載入 JSME 化學結構編輯器套件...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. SMILES 輸入與雙向同步框 -->
+            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="smiles-input" class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span>2. SMILES 化學結構線性表示法 (支援手動修改與畫布雙向同步)</span>
+                </label>
+                <div class="flex items-center space-x-1.5">
+                  <button
+                    type="button"
+                    onclick="copySmiles()"
+                    class="text-[11px] font-medium text-slate-600 hover:text-blue-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm transition"
+                  >
+                    <span id="copy-btn-text">複製</span>
+                  </button>
+                  <button
+                    type="button"
+                    onclick="syncSmilesInputToCanvas()"
+                    class="text-[11px] font-semibold text-blue-700 hover:text-white bg-blue-50 hover:bg-blue-600 px-2.5 py-0.5 rounded border border-blue-200 transition"
+                    title="將輸入框的 SMILES 繪製到上方畫布"
+                  >
+                    同步至畫布 ↑
+                  </button>
+                </div>
+              </div>
+
+              <div class="relative">
+                <input
+                  id="smiles-input"
+                  type="text"
+                  placeholder="請在上方畫布手繪結構，或直接貼上 SMILES 字串 (例: CC(=O)OC1=CC=CC=C1C(=O)O)"
+                  onkeydown="if(event.key === 'Enter') { event.preventDefault(); syncSmilesInputToCanvas(); executePatentSearch(); }"
+                  class="w-full font-mono text-xs sm:text-sm bg-white border border-slate-300 rounded-lg px-3.5 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm"
+                />
+              </div>
+            </div>
+
+            <!-- 3. 快速測試按鈕 (標準化合物與子結構骨架測試按鈕) -->
+            <div>
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-xs font-semibold text-slate-600 flex items-center space-x-1.5">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                  </svg>
+                  <span>快速測試標準藥物與核心骨架 (點擊自動填入並繪製)</span>
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <!-- 按鈕 1：阿斯匹靈 Aspirin -->
+                <button
+                  type="button"
+                  onclick="loadPreset('aspirin')"
+                  id="preset-btn-aspirin"
+                  class="preset-btn group text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition shadow-sm flex flex-col justify-between"
+                >
+                  <div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700">阿斯匹靈 Aspirin</span>
+                      <span class="text-[10px] font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">C₉H₈O₄</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">乙醯水楊酸 (鎮痛抗炎)</p>
+                  </div>
+                  <p class="text-[10px] font-mono text-slate-400 truncate mt-2 pt-1.5 border-t border-slate-100">
+                    CC(=O)OC1=CC=CC=C1C(=O)O
+                  </p>
+                </button>
+
+                <!-- 按鈕 2：布洛芬 Ibuprofen -->
+                <button
+                  type="button"
+                  onclick="loadPreset('ibuprofen')"
+                  id="preset-btn-ibuprofen"
+                  class="preset-btn group text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition shadow-sm flex flex-col justify-between"
+                >
+                  <div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700">布洛芬 Ibuprofen</span>
+                      <span class="text-[10px] font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">C₁₃H₁₈O₂</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">異丁苯丙酸 (NSAIDs)</p>
+                  </div>
+                  <p class="text-[10px] font-mono text-slate-400 truncate mt-2 pt-1.5 border-t border-slate-100">
+                    CC(C)CC1=CC=C(C=C1)C(C)C(=O)O
+                  </p>
+                </button>
+
+                <!-- 按鈕 3：咖啡因 Caffeine -->
+                <button
+                  type="button"
+                  onclick="loadPreset('caffeine')"
+                  id="preset-btn-caffeine"
+                  class="preset-btn group text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition shadow-sm flex flex-col justify-between"
+                >
+                  <div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700">咖啡因 Caffeine</span>
+                      <span class="text-[10px] font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">C₈H₁₀N₄O₂</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">甲基黃嘌呤生物鹼</p>
+                  </div>
+                  <p class="text-[10px] font-mono text-slate-400 truncate mt-2 pt-1.5 border-t border-slate-100">
+                    CN1C=NC2=C1C(=O)N(C(=O)N2C)C
+                  </p>
+                </button>
+
+                <!-- 按鈕 4：水楊酸骨架 Salicylic Acid (適合測試子結構與相似度檢索) -->
+                <button
+                  type="button"
+                  onclick="loadPreset('salicylic')"
+                  id="preset-btn-salicylic"
+                  class="preset-btn group text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition shadow-sm flex flex-col justify-between"
+                >
+                  <div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700">水楊酸 Salicylic Acid</span>
+                      <span class="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200">核心骨架</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">鄰羥基苯甲酸 (適合子結構檢索)</p>
+                  </div>
+                  <p class="text-[10px] font-mono text-slate-400 truncate mt-2 pt-1.5 border-t border-slate-100">
+                    OC(=O)C1=CC=CC=C1O
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            <!-- 4. 檢索模式選擇器 (Search Mode Selector: Exact / Substructure / 2D Similarity) -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/90 space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                  </svg>
+                  <span>檢索模式選擇器 (Search Mode)</span>
+                </label>
+                <span id="active-mode-pill" class="text-[11px] font-mono font-semibold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded border border-blue-200">
+                  Exact Match
+                </span>
+              </div>
+
+              <!-- 三種檢索模式切換卡片 -->
+              <div class="grid grid-cols-1 gap-2">
+                <!-- 模式 1：精確結構檢索 (Exact Match) -->
+                <button
+                  type="button"
+                  onclick="setSearchMode('exact')"
+                  id="mode-card-exact"
+                  class="text-left p-3 rounded-xl border-2 border-blue-600 bg-blue-50/60 transition flex items-start justify-between gap-3"
+                >
+                  <div class="flex items-start space-x-2.5">
+                    <div id="mode-radio-exact" class="w-4 h-4 rounded-full border-2 border-blue-600 flex items-center justify-center mt-0.5 shrink-0">
+                      <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-slate-900">1. 精確結構檢索 (Exact Match)</div>
+                      <p class="text-[11px] text-slate-500 mt-0.5">尋找與輸入結構完全相符的單一已知化合物及其美國專利</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-mono bg-white text-slate-600 px-2 py-0.5 rounded border border-slate-200 shrink-0">
+                    1 CID
+                  </span>
+                </button>
+
+                <!-- 模式 2：子結構檢索 (Substructure Search) -->
+                <button
+                  type="button"
+                  onclick="setSearchMode('substructure')"
+                  id="mode-card-substructure"
+                  class="text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-400 transition flex items-start justify-between gap-3"
+                >
+                  <div class="flex items-start space-x-2.5">
+                    <div id="mode-radio-substructure" class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mt-0.5 shrink-0">
+                      <div class="w-2 h-2 rounded-full bg-transparent"></div>
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-slate-900">2. 子結構檢索 (Substructure Search)</div>
+                      <p class="text-[11px] text-slate-500 mt-0.5">找出包含此化學核心骨架的所有衍生化合物 (Top 20 命中畫廊)</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 shrink-0">
+                    fastsubstructure
+                  </span>
+                </button>
+
+                <!-- 模式 3：結構相似度檢索 (2D Similarity Search) -->
+                <button
+                  type="button"
+                  onclick="setSearchMode('similarity')"
+                  id="mode-card-similarity"
+                  class="text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-400 transition flex items-start justify-between gap-3"
+                >
+                  <div class="flex items-start space-x-2.5">
+                    <div id="mode-radio-similarity" class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mt-0.5 shrink-0">
+                      <div class="w-2 h-2 rounded-full bg-transparent"></div>
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-slate-900">3. 結構相似度檢索 (2D Similarity Search)</div>
+                      <p class="text-[11px] text-slate-500 mt-0.5">找出 Tanimoto 2D 指紋相似度達門檻以上的類似化合物 (Top 20)</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-mono bg-sky-50 text-sky-700 px-2 py-0.5 rounded border border-sky-200 shrink-0">
+                    fastsimilarity_2d
+                  </span>
+                </button>
+              </div>
+
+              <!-- 相似度門檻滑桿控制區 (僅於選擇「結構相似度檢索」時顯示) -->
+              <div id="similarity-threshold-panel" class="hidden pt-3 mt-2 border-t border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                  <label for="similarity-threshold-slider" class="text-xs font-semibold text-slate-700 flex items-center space-x-1.5">
+                    <span>2D Tanimoto 相似度門檻 (Threshold)</span>
+                  </label>
+                  <div class="flex items-center space-x-1.5">
+                    <span id="similarity-threshold-badge" class="px-2.5 py-0.5 text-xs font-mono font-bold bg-lab-900 text-sky-300 rounded-md shadow-sm">
+                      90%
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                  <span class="text-[11px] font-mono text-slate-400">80%</span>
+                  <input
+                    id="similarity-threshold-slider"
+                    type="range"
+                    min="80"
+                    max="99"
+                    step="1"
+                    value="90"
+                    oninput="updateSimilarityThreshold(this.value)"
+                    class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                  <span class="text-[11px] font-mono text-slate-400">99%</span>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                  <span>快速設定門檻：</span>
+                  <div class="flex items-center space-x-1.5 font-mono">
+                    <button type="button" onclick="updateSimilarityThreshold(85)" class="px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 transition">85%</button>
+                    <button type="button" onclick="updateSimilarityThreshold(90)" class="px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 transition">90%</button>
+                    <button type="button" onclick="updateSimilarityThreshold(95)" class="px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 transition">95%</button>
+                    <button type="button" onclick="updateSimilarityThreshold(98)" class="px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-blue-400 text-slate-600 hover:text-blue-600 transition">98%</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. 「開始檢索美國專利」主按鈕與 API 檢索說明 -->
+            <div class="pt-3 border-t border-slate-200 space-y-3">
+              <div class="flex items-center justify-between text-xs text-slate-500">
+                <span class="font-medium text-slate-600 flex items-center space-x-1.5">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span id="pipeline-desc-text">檢索管線：POST SMILES → CID → 屬性 &amp; 美國專利號</span>
+                </span>
+                <span class="font-mono text-[11px] text-slate-400">PubChem REST</span>
+              </div>
+
+              <button
+                type="button"
+                onclick="executePatentSearch()"
+                id="main-search-btn"
+                class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-lab-900 via-blue-800 to-blue-600 hover:from-lab-950 hover:to-blue-700 active:scale-[0.99] text-white font-bold text-sm shadow-md shadow-blue-900/20 hover:shadow-lg transition-all flex items-center justify-center space-x-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <svg id="search-btn-icon" class="w-5 h-5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <span id="search-btn-text">開始檢索美國專利 (Search US Patents)</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 右側欄：檢索結果區 (7/12) ==================== -->
+      <section class="lg:col-span-7 flex flex-col space-y-5">
+
+        <!-- ==================== 錯誤與提示訊息區塊 (Collapsible / Dismissible Alert Banner) ==================== -->
+        <div id="error-banner" class="hidden transition-all duration-200">
+          <div id="error-banner-card" class="bg-red-50 border-l-4 border-red-600 rounded-xl p-4 shadow-sm ring-1 ring-red-200 flex items-start justify-between gap-4">
+            <div class="flex items-start space-x-3">
+              <div id="error-icon-box" class="p-2 bg-red-100 text-red-600 rounded-lg shrink-0 mt-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              </div>
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span id="error-code-badge" class="px-2 py-0.5 text-[11px] font-mono font-bold uppercase bg-red-100 text-red-800 rounded">
+                    CID_NOT_FOUND
+                  </span>
+                  <h3 id="error-title" class="text-sm font-bold text-red-950">
+                    查無完全相符的已知化合物，建議改用子結構或相似度檢索
+                  </h3>
+                </div>
+                <p id="error-message" class="text-xs text-red-800/90 mt-1.5 leading-relaxed">
+                  PubChem 資料庫中未找到與該 SMILES 完全一致的已知化合物紀錄。請確認化學結構之原子價數是否正確，或點擊下方標準測試分子。
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              <button
+                type="button"
+                onclick="switchToSubstructureAndSearch()"
+                class="text-xs font-semibold text-red-800 hover:text-red-950 bg-white hover:bg-red-100/80 px-3 py-1.5 rounded-lg border border-red-200 transition shadow-sm"
+              >
+                改用子結構檢索
+              </button>
+              <button
+                type="button"
+                onclick="hideErrorBanner()"
+                class="text-red-400 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-100 transition"
+                title="關閉提示"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== 區塊 0：命中衍生化合物畫廊 (Matched Derivatives Gallery - 子結構/相似度模式專用) ==================== -->
+        <div id="derivatives-gallery-section" class="hidden bg-white rounded-2xl shadow-sm border border-indigo-200/90 overflow-hidden">
+          <!-- 畫廊標題列 -->
+          <div class="bg-gradient-to-r from-indigo-950 via-lab-900 to-blue-900 px-5 py-3.5 flex flex-wrap items-center justify-between gap-2 text-white">
+            <div class="flex items-center space-x-2.5">
+              <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+              </svg>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h2 class="font-bold text-sm sm:text-base tracking-wide">命中衍生化合物畫廊 (Matched Derivatives Gallery)</h2>
+                  <span id="gallery-mode-badge" class="text-[11px] font-mono bg-sky-400/20 text-sky-200 border border-sky-400/30 px-2 py-0.5 rounded-full">
+                    Substructure Top 20
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <span id="gallery-count-badge" class="text-xs font-mono bg-white/10 px-2.5 py-1 rounded-lg border border-white/15 text-sky-200">
+                共 0 個衍生化合物
+              </span>
+              <button
+                type="button"
+                onclick="toggleDerivativesGalleryBody()"
+                id="gallery-collapse-btn"
+                class="text-xs bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/15 transition flex items-center space-x-1"
+              >
+                <span id="gallery-collapse-text">收合畫廊</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 畫廊提示副標題 -->
+          <div class="bg-indigo-50/70 border-b border-indigo-100 px-5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-indigo-950">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+              <span class="font-medium">點擊下方任一張衍生化合物卡片，即可立即切換並載入該化合物專屬的「美國專利清單」。</span>
+            </div>
+            <span id="gallery-selected-indicator" class="font-mono text-[11px] text-indigo-700 font-semibold shrink-0">
+              目前檢視：CID —
+            </span>
+          </div>
+
+          <!-- 畫廊載入中動畫 -->
+          <div id="derivatives-loading-view" class="hidden p-8 flex flex-col items-center justify-center text-center space-y-3">
+            <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <div>
+              <p id="derivatives-loading-title" class="text-sm font-bold text-slate-800">
+                正在透過 PubChem 快速檢索端點搜尋衍生化合物並批次載入分子式與分子量...
+              </p>
+              <p id="derivatives-loading-subtitle" class="text-xs text-slate-500 font-mono mt-1">
+                POST /rest/pug/compound/fastsubstructure/smiles/cids/JSON?MaxRecords=20
+              </p>
+            </div>
+          </div>
+
+          <!-- 衍生化合物網格卡片容器 (2~4 欄響應式網格) -->
+          <div id="derivatives-grid-wrapper" class="p-4 bg-slate-50/60 max-h-[460px] overflow-y-auto">
+            <div id="derivatives-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <!-- 由 JavaScript 動態渲染前 20 個衍生化合物卡片 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== 區塊 A：化合物基本資訊卡片 (Compound Basic Info Card) ==================== -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden relative">
+          <!-- 卡片標題列 -->
+          <div class="bg-slate-900 px-5 py-3.5 flex items-center justify-between text-white">
+            <div class="flex items-center space-x-2.5">
+              <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <h2 class="font-bold text-sm sm:text-base tracking-wide">化合物基本資訊卡片 (Compound Profile)</h2>
+            </div>
+            <span id="compound-status-tag" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              等待結構檢索...
+            </span>
+          </div>
+
+          <!-- 狀態 1：空白骨架 (Skeleton / Empty State) -->
+          <div id="compound-skeleton-view" class="p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row gap-4 items-center pb-4 border-b border-slate-100">
+              <!-- 2D 結構縮圖預留框 -->
+              <div class="w-32 h-32 rounded-xl border border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center shrink-0">
+                <svg class="w-8 h-8 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <polygon points="12 2 20.66 7 20.66 17 12 22 3.34 17 3.34 7 12 2"></polygon>
+                </svg>
+                <span class="text-[10px] font-mono text-slate-400 mt-1">2D Structure PNG</span>
+              </div>
+              <div class="space-y-2.5 flex-1 w-full">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-slate-400 uppercase">IUPAC 系統命名 / 化合物資訊</span>
+                  <span class="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium">尚未執行檢索</span>
+                </div>
+                <div class="h-6 w-3/4 rounded-lg skeleton-shimmer"></div>
+                <div class="h-4 w-1/2 rounded-md skeleton-shimmer"></div>
+                <div class="h-4 w-2/3 rounded-md skeleton-shimmer"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                <span class="text-[11px] text-slate-400 font-medium block">分子式 (MolecularFormula)</span>
+                <div class="h-5 w-24 rounded skeleton-shimmer"></div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                <span class="text-[11px] text-slate-400 font-medium block">分子量 (MolecularWeight)</span>
+                <div class="h-5 w-28 rounded skeleton-shimmer"></div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 col-span-2 sm:col-span-1">
+                <span class="text-[11px] text-slate-400 font-medium block">標準 InChIKey</span>
+                <div class="h-5 w-full rounded skeleton-shimmer"></div>
+              </div>
+            </div>
+
+            <div class="bg-blue-50/70 border border-blue-100 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center space-x-2 text-xs text-slate-600">
+                <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>點擊左側「開始檢索美國專利」將即時透過 PubChem PUG REST API 取得 CID、結構圖與美國專利清單。</span>
+              </div>
+              <button
+                type="button"
+                onclick="executePatentSearch()"
+                class="text-xs font-bold text-blue-700 hover:text-blue-900 bg-white px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm shrink-0 transition"
+              >
+                立即檢索目前結構 →
+              </button>
+            </div>
+          </div>
+
+          <!-- 狀態 2：載入中動畫 (Loading Spinner State) -->
+          <div id="compound-loading-view" class="hidden p-8 flex flex-col items-center justify-center text-center space-y-3 min-h-[240px]">
+            <div class="relative flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full border-4 border-slate-200"></div>
+              <div class="w-12 h-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin absolute"></div>
+              <svg class="w-5 h-5 text-blue-600 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 20.66 7 20.66 17 12 22 3.34 17 3.34 7 12 2"></polygon>
+              </svg>
+            </div>
+            <div>
+              <h3 id="loading-step-title" class="text-sm font-bold text-slate-800">
+                步驟 1/2：正在透過 HTTP POST 將 SMILES 轉換為 PubChem CID...
+              </h3>
+              <p class="text-xs text-slate-500 mt-1 font-mono break-all max-w-lg" id="loading-smiles-preview">
+                POST https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/cids/JSON
+              </p>
+            </div>
+          </div>
+
+          <!-- 狀態 3：實際 PubChem API 檢索結果資料 (Populated State) -->
+          <div id="compound-populated-view" class="hidden p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row gap-5 items-start sm:items-center pb-4 border-b border-slate-100">
+              <!-- PubChem 2D 結構影像 -->
+              <div class="w-36 h-36 rounded-xl border border-slate-200 bg-white p-1.5 flex items-center justify-center shrink-0 shadow-sm relative group overflow-hidden">
+                <img
+                  id="info-structure-img"
+                  src="https://placehold.co/200x200/f8fafc/475569?text=2D+Structure"
+                  alt="Compound 2D Structure"
+                  class="w-full h-full object-contain"
+                  onerror="this.onerror=null; this.src='https://placehold.co/200x200/f8fafc/64748b?text=No+Image';"
+                />
+                <span class="absolute bottom-1 right-1.5 text-[9px] font-mono bg-slate-900/75 text-white px-1.5 py-0.5 rounded">
+                  2D PNG
+                </span>
+              </div>
+
+              <!-- 化合物核心識別與 IUPAC 名稱 -->
+              <div class="flex-1 min-w-0 space-y-2 w-full">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center space-x-2">
+                    <span id="info-common-name" class="text-lg font-bold text-slate-900">PubChem Compound</span>
+                    <span class="px-2 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md">
+                      Matched
+                    </span>
+                  </div>
+
+                  <!-- PubChem CID 外部連結徽章 -->
+                  <a
+                    id="info-cid-link"
+                    href="https://pubchem.ncbi.nlm.nih.gov/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center space-x-1.5 bg-lab-50 hover:bg-blue-100/80 border border-blue-200 rounded-xl px-3 py-1.5 transition group"
+                    title="於 PubChem 開啟此化合物頁面"
+                  >
+                    <span class="text-[10px] font-mono uppercase tracking-wider text-blue-700">PubChem CID:</span>
+                    <span id="info-cid" class="text-sm font-mono font-bold text-lab-900 group-hover:text-blue-700">—</span>
+                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                  </a>
+                </div>
+
+                <div>
+                  <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">IUPAC 系統命名 (IUPACName)</span>
+                  <p id="info-iupac" class="text-xs sm:text-sm font-mono text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/70 mt-1 break-words">
+                    —
+                  </p>
+                </div>
+
+                <div>
+                  <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">標準 SMILES (CanonicalSMILES)</span>
+                  <p id="info-canonical-smiles" class="text-xs font-mono text-blue-900 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100 mt-1 break-all">
+                    —
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 化學屬性欄位 (MolecularFormula, MolecularWeight, InChIKey) -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div class="sm:col-span-3 p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+                <span class="text-[11px] text-slate-500 block">分子式 (MolecularFormula)</span>
+                <span id="info-formula" class="text-base font-mono font-bold text-slate-900 mt-0.5 block">—</span>
+              </div>
+              <div class="sm:col-span-3 p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+                <span class="text-[11px] text-slate-500 block">分子量 (MolecularWeight)</span>
+                <span id="info-mw" class="text-base font-mono font-bold text-slate-900 mt-0.5 block">—</span>
+              </div>
+              <div class="sm:col-span-6 p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <span class="text-[11px] text-slate-500 block">國際化學品識別碼雜湊 (InChIKey)</span>
+                  <span id="info-inchikey" class="text-xs font-mono font-semibold text-slate-800 mt-1 block truncate">—</span>
+                </div>
+                <button
+                  type="button"
+                  onclick="copyInChIKey()"
+                  class="text-xs text-slate-600 hover:text-blue-700 bg-white hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border border-slate-200 transition shrink-0 font-medium"
+                  title="複製 InChIKey"
+                >
+                  <span id="copy-inchikey-text">複製</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 進階輔助功能 1：自動生成 Google Patents 美國專利全文檢索語法 -->
+            <div class="mt-2 pt-4 border-t border-slate-200/80">
+              <div class="bg-gradient-to-br from-lab-50 via-blue-50/40 to-indigo-50/40 rounded-xl p-4 border border-blue-200/80 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                    <h3 class="text-xs sm:text-sm font-bold text-lab-900">
+                      Google Patents 美國專利全文深度檢索語法 (Boolean Query Builder)
+                    </h3>
+                    <span class="text-[10px] font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded border border-blue-200">
+                      InChIKey + IUPAC + Top 5 同義詞/CAS
+                    </span>
+                  </div>
+                  <span id="synonyms-status-badge" class="text-[11px] font-mono text-slate-500">
+                    同義詞載入中...
+                  </span>
+                </div>
+
+                <!-- 篩選出的前 5 個英文同義詞與 CAS 號標籤列 -->
+                <div class="flex flex-wrap items-center gap-1.5" id="info-synonyms-chips">
+                  <span class="text-[11px] text-slate-400 font-mono">正在自 /synonyms/JSON 篩選常見英文同義詞與 CAS 號...</span>
+                </div>
+
+                <!-- 自動組合的檢索式文字框 -->
+                <div class="relative">
+                  <textarea
+                    id="google-patents-query-box"
+                    rows="2"
+                    readonly
+                    class="w-full font-mono text-xs bg-white border border-blue-200 rounded-lg px-3.5 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-inner resize-none leading-relaxed"
+                  >("InChIKey" OR "IUPACName") country:US</textarea>
+                </div>
+
+                <!-- 操作按鈕列：複製檢索式 & 一鍵前往 Google Patents 深度檢索 -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                  <p class="text-[11px] text-slate-500">
+                    涵蓋未建立化學結構索引、但於說明書或請求項提及學名/俗名/CAS號之美國專利全文。
+                  </p>
+                  <div class="flex flex-wrap items-center gap-2 ml-auto">
+                    <button
+                      type="button"
+                      onclick="copyGooglePatentsQuery()"
+                      class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-sm transition"
+                    >
+                      <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                      </svg>
+                      <span id="copy-gp-query-text">複製檢索式</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onclick="openGooglePatentsDeepSearch()"
+                      class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow transition"
+                    >
+                      <span>一鍵前往 Google Patents 深度檢索</span>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== 區塊 B：美國專利清單表格 (US Patent List Table) ==================== -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden flex-1 flex flex-col">
+          <!-- 表格標題列 -->
+          <div class="bg-gradient-to-r from-lab-900 to-lab-800 px-5 py-3.5 flex flex-wrap items-center justify-between gap-2 text-white">
+            <div class="flex items-center space-x-2.5">
+              <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+              </svg>
+              <h2 class="font-bold text-sm sm:text-base tracking-wide">美國專利清單 (US Patents Hit List)</h2>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="patent-total-badge" class="text-xs font-mono bg-white/10 px-2.5 py-1 rounded-lg border border-white/15 text-sky-200">
+                美國專利總計：0 筆
+              </span>
+              <button
+                type="button"
+                id="export-csv-btn"
+                onclick="exportFilteredPatentsToCSV()"
+                disabled
+                class="inline-flex text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-3 py-1.5 rounded-lg transition items-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="匯出目前篩選出的美國專利報告 (UTF-8 BOM CSV 供 Excel 開啟)"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span id="export-csv-btn-text">匯出 CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 專利分類頁籤 (Tabs) 與專利編號快速過濾工具列 -->
+          <div id="patent-controls-bar" class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <!-- 分類頁籤：全部 / 公告專利 (B1, B2, 純數字) / 公開申請案 (A1, A2) -->
+            <div class="inline-flex flex-wrap rounded-xl bg-slate-200/80 p-1 gap-1">
+              <button
+                type="button"
+                onclick="setPatentCategoryTab('all')"
+                id="tab-btn-all"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-lab-900 shadow-sm transition flex items-center space-x-1.5"
+              >
+                <span>全部美國專利</span>
+                <span id="tab-count-all" class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 text-slate-700 rounded-full">0</span>
+              </button>
+
+              <button
+                type="button"
+                onclick="setPatentCategoryTab('granted')"
+                id="tab-btn-granted"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5"
+                title="包含 B1、B2 或早期純數字之美國公告專利"
+              >
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>公告專利 (Granted)</span>
+                <span id="tab-count-granted" class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 text-slate-600 rounded-full">0</span>
+              </button>
+
+              <button
+                type="button"
+                onclick="setPatentCategoryTab('applications')"
+                id="tab-btn-applications"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5"
+                title="包含 A1、A2 等字樣之美國公開申請案"
+              >
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span>公開申請案 (Applications)</span>
+                <span id="tab-count-applications" class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 text-slate-600 rounded-full">0</span>
+              </button>
+            </div>
+
+            <!-- 依專利編號快速過濾搜尋框 -->
+            <div class="relative w-full sm:w-64">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input
+                id="patent-filter-input"
+                type="text"
+                oninput="handlePatentFilterInput()"
+                placeholder="依專利編號過濾 (例: US2014178487A1)..."
+                class="w-full text-xs font-mono bg-white border border-slate-300 rounded-lg pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+              />
+              <button
+                type="button"
+                id="clear-patent-filter-btn"
+                onclick="clearPatentFilter()"
+                class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                title="清除過濾條件"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- 專利表格本體 -->
+          <div class="overflow-x-auto flex-1">
+            <!-- 本頁前 10 筆 Google Patents Meta 自動抓取狀態提示條 -->
+            <div id="patent-meta-fetch-bar" class="hidden bg-indigo-50/80 border-b border-indigo-100 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex items-center space-x-2 text-indigo-950">
+                <span id="patent-meta-spinner" class="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                <span id="patent-meta-status-text" class="font-medium">
+                  正在呼叫後端 <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-indigo-200 text-indigo-700">/api/patent_details</code> 抓取本頁前 10 筆專利的標題、申請人、日期與摘要...
+                </span>
+              </div>
+              <button
+                type="button"
+                onclick="fetchCurrentPageTop10PatentDetails(true)"
+                class="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-white hover:bg-indigo-100/70 px-2.5 py-1 rounded border border-indigo-200 transition"
+              >
+                重新整理本頁前 10 筆詳情
+              </button>
+            </div>
+
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/90 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  <th class="py-3 px-4 w-14">#</th>
+                  <th class="py-3 px-4 w-48">美國專利編號 &amp; 類型</th>
+                  <th class="py-3 px-4">專利標題 / 申請人 (Assignee) / 日期 / 摘要 (點擊展開)</th>
+                  <th class="py-3 px-4 w-48 text-right">外部專利資料庫檢視</th>
+                </tr>
+              </thead>
+
+              <!-- 1. 空白骨架 Tbody (Skeleton Rows) -->
+              <tbody id="patent-skeleton-tbody" class="divide-y divide-slate-100">
+                <tr class="bg-white">
+                  <td class="py-4 px-4"><div class="h-4 w-6 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-5 w-32 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-5 w-64 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-7 w-40 ml-auto rounded-lg skeleton-shimmer"></div></td>
+                </tr>
+                <tr class="bg-white">
+                  <td class="py-4 px-4"><div class="h-4 w-6 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-5 w-32 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-5 w-64 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-7 w-40 ml-auto rounded-lg skeleton-shimmer"></div></td>
+                </tr>
+                <tr class="bg-white">
+                  <td class="py-4 px-4"><div class="h-4 w-6 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-5 w-32 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-5 w-64 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-4"><div class="h-7 w-40 ml-auto rounded-lg skeleton-shimmer"></div></td>
+                </tr>
+              </tbody>
+
+              <!-- 2. 載入中動畫 Tbody (Loading Spinner) -->
+              <tbody id="patent-loading-tbody" class="hidden">
+                <tr>
+                  <td colspan="4" class="py-16 px-6 text-center">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                      <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div class="space-y-1">
+                        <p class="text-sm font-bold text-slate-800">正在自 PubChem PUG REST 載入關聯美國專利號清單...</p>
+                        <p class="text-xs text-slate-500 font-mono">GET /rest/pug/compound/cid/{cid}/xrefs/PatentID/JSON</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+
+              <!-- 3. 檢索結果 Tbody (Populated Rows) -->
+              <tbody id="patent-populated-tbody" class="hidden divide-y divide-slate-200/70 text-sm">
+                <!-- 由 JavaScript 動態渲染每頁 50 筆美國專利 -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 分頁控制列 (每頁 50 筆) -->
+          <div id="patent-pagination-bar" class="hidden bg-slate-50 border-t border-slate-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="text-xs text-slate-600 font-medium">
+              顯示第 <span id="page-start-index" class="font-mono font-bold text-slate-900">0</span> -
+              <span id="page-end-index" class="font-mono font-bold text-slate-900">0</span> 筆，共
+              <span id="page-total-count" class="font-mono font-bold text-blue-700">0</span> 筆美國專利
+              <span class="text-slate-400 ml-1">(每頁 50 筆)</span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                id="btn-first-page"
+                onclick="goToPatentPage(1)"
+                class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                title="第一頁"
+              >
+                « 首頁
+              </button>
+              <button
+                type="button"
+                id="btn-prev-page"
+                onclick="changePatentPage(-1)"
+                class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                ‹ 上一頁
+              </button>
+
+              <div class="flex items-center space-x-1 px-2 text-xs font-mono">
+                <span>頁次</span>
+                <input
+                  id="page-jump-input"
+                  type="number"
+                  min="1"
+                  value="1"
+                  onchange="handlePageJumpInput(this.value)"
+                  class="w-14 text-center py-1 px-1.5 rounded border border-slate-300 bg-white text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+                <span>/</span>
+                <span id="page-total-pages" class="font-bold text-slate-800">1</span>
+              </div>
+
+              <button
+                type="button"
+                id="btn-next-page"
+                onclick="changePatentPage(1)"
+                class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                下一頁 ›
+              </button>
+              <button
+                type="button"
+                id="btn-last-page"
+                onclick="goToLastPatentPage()"
+                class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                title="最後一頁"
+              >
+                末頁 »
+              </button>
+            </div>
+          </div>
+
+          <!-- 空白骨架底部說明列 -->
+          <div id="patent-skeleton-footer" class="bg-slate-50 border-t border-slate-200/80 px-5 py-3 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2 mt-auto">
+            <span>點擊左側「開始檢索美國專利」後，系統將自動篩選 US 開頭專利並移除連字號（如 US2014178487A1）。</span>
+            <button
+              type="button"
+              onclick="loadPresetAndSearch('aspirin')"
+              class="text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2 shrink-0"
+            >
+              立即檢索「阿斯匹靈 (Aspirin)」美國專利 →
+            </button>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- ==================== 頁尾 (Footer) ==================== -->
+  <footer class="bg-white border-t border-slate-200 mt-8 py-4">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="font-semibold text-slate-700">US Patent Chemical Structure Search System v4.1</span>
+        <span>·</span>
+        <span>Powered by JSME Molecular Editor &amp; PubChem PUG REST API</span>
+      </div>
+      <div class="font-mono text-[11px] text-slate-400">
+        Normalized Patent ID (US-XXXX-A1 → USXXXXA1) · Google Patents &amp; USPTO Direct Link
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== 原生 JavaScript 邏輯區 (async/await + fetch) ==================== -->
+  <script>
+    // 全域變數：JSME 編輯器實例與同步鎖
+    var jsmeApplet = null;
+    var isSyncingFromInput = false;
+
+    // 檢索模式與衍生化合物畫廊狀態
+    let searchConfig = {
+      mode: 'exact',          // 'exact' | 'substructure' | 'similarity'
+      threshold: 90,          // 80 ~ 99 (2D 相似度門檻)
+      derivatives: [],        // 儲存前 20 筆衍生化合物屬性 [{ cid, MolecularFormula, MolecularWeight, IUPACName, InChIKey, CanonicalSMILES }]
+      selectedCid: null,      // 目前畫廊選中的 CID
+      isGalleryCollapsed: false,
+      patentCacheByCid: {},   // 快取已載入過的 CID 專利陣列，讓使用者切換衍生化合物卡片更流暢
+      synonymsCacheByCid: {}  // 快取已載入過的 CID 同義詞陣列
+    };
+
+    // 專利檢索結果狀態與分頁設定 (每頁 50 筆)
+    const PATENTS_PER_PAGE = 50;
+    let patentState = {
+      cid: null,
+      smiles: '',             // 目前檢視化合物的標準 SMILES
+      inchiKey: '',           // 目前檢視化合物的 InChIKey
+      iupacName: '',          // 目前檢視化合物的 IUPACName
+      googlePatentsQuery: '', // 自動生成的 Google Patents 檢索式
+      allUsPatents: [],       // 所有 US 開頭專利物件 [{ id, category, kindLabel }] (id 已移除連字號 "-")
+      grantedPatents: [],     // 公告專利 (B1, B2 或早期純數字)
+      applicationPatents: [], // 公開申請案 (A1, A2 等)
+      activeTab: 'all',       // 'all' | 'granted' | 'applications'
+      filterQuery: '',        // 專利號搜尋字串
+      filteredList: [],       // 經過 Tab 與搜尋框過濾後的陣列
+      currentPage: 1,
+      detailsCache: {},       // 快取由後端 /api/patent_details 抓回的專利 Meta 資訊 { [patentId]: { title, assignee, date, abstract, ... } }
+      expandedAbstracts: {},  // 紀錄目前已點擊展開完整摘要的專利編號 { [patentId]: true }
+      backendAvailable: null  // 紀錄本地 FastAPI 後端是否連線正常
+    };
+
+    // 四組快速測試標準分子與核心骨架
+    const PRESET_MOLECULES = {
+      aspirin: {
+        name: '阿斯匹靈 (Aspirin)',
+        smiles: 'CC(=O)OC1=CC=CC=C1C(=O)O'
+      },
+      ibuprofen: {
+        name: '布洛芬 (Ibuprofen)',
+        smiles: 'CC(C)CC1=CC=C(C=C1)C(C)C(=O)O'
+      },
+      caffeine: {
+        name: '咖啡因 (Caffeine)',
+        smiles: 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'
+      },
+      salicylic: {
+        name: '水楊酸骨架 (Salicylic Acid)',
+        smiles: 'OC(=O)C1=CC=CC=C1O'
+      }
+    };
+
+    /**
+     * 核心工具函式：正規化美國專利編號
+     * 將 PubChem 回傳含連字號 "-" 的專利編號（例如 US-2014178487-A1）移除所有連字號與空白，
+     * 統一轉為無連字號格式（例如 US2014178487A1），確保介面顯示與 Google Patents / USPTO 外部網址正確無誤。
+     */
+    function normalizeUsPatentId(rawId) {
+      return String(rawId || '')
+        .trim()
+        .replace(/[-\s/]/g, '')
+        .toUpperCase();
+    }
+
+    /**
+     * 切換檢索模式：'exact' (精確) | 'substructure' (子結構) | 'similarity' (2D 相似度)
+     */
+    function setSearchMode(mode) {
+      searchConfig.mode = mode;
+
+      const modes = ['exact', 'substructure', 'similarity'];
+      modes.forEach(m => {
+        const card = document.getElementById(`mode-card-${m}`);
+        const radio = document.getElementById(`mode-radio-${m}`);
+        if (!card || !radio) return;
+
+        if (m === mode) {
+          card.className = 'text-left p-3 rounded-xl border-2 border-blue-600 bg-blue-50/60 transition flex items-start justify-between gap-3 shadow-sm';
+          radio.className = 'w-4 h-4 rounded-full border-2 border-blue-600 flex items-center justify-center mt-0.5 shrink-0';
+          radio.innerHTML = '<div class="w-2 h-2 rounded-full bg-blue-600"></div>';
+        } else {
+          card.className = 'text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-400 transition flex items-start justify-between gap-3';
+          radio.className = 'w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mt-0.5 shrink-0';
+          radio.innerHTML = '<div class="w-2 h-2 rounded-full bg-transparent"></div>';
+        }
+      });
+
+      const thresholdPanel = document.getElementById('similarity-threshold-panel');
+      const activeModePill = document.getElementById('active-mode-pill');
+      const pipelineDesc = document.getElementById('pipeline-desc-text');
+
+      if (mode === 'exact') {
+        if (thresholdPanel) thresholdPanel.classList.add('hidden');
+        if (activeModePill) activeModePill.textContent = 'Exact Match';
+        if (pipelineDesc) pipelineDesc.textContent = '檢索管線：POST SMILES → 單一 CID → 屬性 & 美國專利號';
+      } else if (mode === 'substructure') {
+        if (thresholdPanel) thresholdPanel.classList.add('hidden');
+        if (activeModePill) activeModePill.textContent = 'Substructure (Max 20)';
+        if (pipelineDesc) pipelineDesc.textContent = '檢索管線：POST fastsubstructure → Top 20 衍生畫廊 → 專屬專利';
+      } else if (mode === 'similarity') {
+        if (thresholdPanel) thresholdPanel.classList.remove('hidden');
+        if (activeModePill) activeModePill.textContent = `2D Similarity ≥ ${searchConfig.threshold}%`;
+        if (pipelineDesc) pipelineDesc.textContent = `檢索管線：POST fastsimilarity_2d (≥${searchConfig.threshold}%) → Top 20 畫廊`;
+      }
+    }
+
+    /**
+     * 更新 2D 結構相似度門檻滑桿 (80% ~ 99%)
+     */
+    function updateSimilarityThreshold(val) {
+      const clamped = Math.max(80, Math.min(99, parseInt(val, 10) || 90));
+      searchConfig.threshold = clamped;
+
+      const slider = document.getElementById('similarity-threshold-slider');
+      if (slider && Number(slider.value) !== clamped) {
+        slider.value = clamped;
+      }
+
+      const badge = document.getElementById('similarity-threshold-badge');
+      if (badge) {
+        badge.textContent = `${clamped}%`;
+      }
+
+      if (searchConfig.mode === 'similarity') {
+        const activeModePill = document.getElementById('active-mode-pill');
+        const pipelineDesc = document.getElementById('pipeline-desc-text');
+        if (activeModePill) activeModePill.textContent = `2D Similarity ≥ ${clamped}%`;
+        if (pipelineDesc) pipelineDesc.textContent = `檢索管線：POST fastsimilarity_2d (≥${clamped}%) → Top 20 畫廊`;
+      }
+    }
+
+    /**
+     * 當精確檢索無結果時，一鍵切換至子結構檢索並立即執行
+     */
+    function switchToSubstructureAndSearch() {
+      hideErrorBanner();
+      setSearchMode('substructure');
+      executePatentSearch();
+    }
+
+    /**
+     * 快速載入預設測試分子 (阿斯匹靈、布洛芬、咖啡因、水楊酸骨架)
+     * 點擊測試按鈕會將 SMILES 填入輸入框並呼叫 jsmeApplet.readGenericMolecularInput(smiles) 同步顯示在畫布上
+     */
+    function loadPreset(presetKey, autoSearch = false) {
+      const preset = PRESET_MOLECULES[presetKey];
+      if (!preset) return;
+
+      const smilesInput = document.getElementById('smiles-input');
+      if (smilesInput) {
+        smilesInput.value = preset.smiles;
+      }
+
+      if (jsmeApplet && typeof jsmeApplet.readGenericMolecularInput === 'function') {
+        try {
+          isSyncingFromInput = true;
+          jsmeApplet.readGenericMolecularInput(preset.smiles);
+          setTimeout(() => { isSyncingFromInput = false; }, 120);
+        } catch (err) {
+          isSyncingFromInput = false;
+          console.warn('JSME 讀取 SMILES 發生警告:', err);
+        }
+      }
+
+      const syncIndicator = document.getElementById('canvas-sync-indicator');
+      if (syncIndicator) syncIndicator.classList.remove('hidden');
+
+      highlightMatchingPresetButton(preset.smiles);
+      hideErrorBanner();
+
+      if (autoSearch) {
+        executePatentSearch();
+      }
+    }
+
+    function loadPresetAndSearch(presetKey) {
+      loadPreset(presetKey, true);
+    }
+
+    /**
+     * 將手動輸入的 SMILES 同步繪製至 JSME 畫布
+     */
+    function syncSmilesInputToCanvas() {
+      const smilesInput = document.getElementById('smiles-input');
+      const smiles = smilesInput ? smilesInput.value.trim() : '';
+      if (!smiles) return;
+
+      if (jsmeApplet && typeof jsmeApplet.readGenericMolecularInput === 'function') {
+        try {
+          isSyncingFromInput = true;
+          jsmeApplet.readGenericMolecularInput(smiles);
+          setTimeout(() => { isSyncingFromInput = false; }, 120);
+        } catch (err) {
+          isSyncingFromInput = false;
+          console.warn('無法同步 SMILES 至畫布:', err);
+        }
+      }
+      highlightMatchingPresetButton(smiles);
+    }
+
+    /**
+     * 清空畫布與 SMILES 輸入框
+     */
+    function clearCanvasAndInput() {
+      const smilesInput = document.getElementById('smiles-input');
+      if (smilesInput) smilesInput.value = '';
+
+      if (jsmeApplet && typeof jsmeApplet.reset === 'function') {
+        try {
+          isSyncingFromInput = true;
+          jsmeApplet.reset();
+          setTimeout(() => { isSyncingFromInput = false; }, 100);
+        } catch (err) {
+          isSyncingFromInput = false;
+        }
+      }
+
+      const syncIndicator = document.getElementById('canvas-sync-indicator');
+      if (syncIndicator) syncIndicator.classList.add('hidden');
+
+      highlightMatchingPresetButton('');
+    }
+
+    /**
+     * 高亮標示目前選中的快速測試分子按鈕
+     */
+    function highlightMatchingPresetButton(currentSmiles) {
+      const cleanSmiles = (currentSmiles || '').trim();
+      Object.keys(PRESET_MOLECULES).forEach(key => {
+        const btn = document.getElementById(`preset-btn-${key}`);
+        if (!btn) return;
+        if (PRESET_MOLECULES[key].smiles === cleanSmiles) {
+          btn.className = 'preset-btn group text-left p-3 rounded-xl border-2 border-blue-600 bg-blue-50/60 transition shadow-sm flex flex-col justify-between';
+        } else {
+          btn.className = 'preset-btn group text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition shadow-sm flex flex-col justify-between';
+        }
+      });
+    }
+
+    /**
+     * 1. 規格要求：定義全域函式 jsmeOnLoad()
+     * 初始化 JSME 畫布並綁定雙向結構修改回呼函式
+     */
+    function jsmeOnLoad() {
+      const container = document.getElementById("jsme_container");
+      if (!container) {
+        setTimeout(jsmeOnLoad, 100);
+        return;
+      }
+
+      try {
+        jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "380px");
+
+        const overlay = document.getElementById('jsme-loading-overlay');
+        if (overlay) overlay.classList.add('hidden');
+
+        updateJsmeStatusBadge(true, 'JSME 引擎就緒');
+
+        // 綁定結構修改事件：手繪或修改結構時自動呼叫 jsmeApplet.smiles() 並填入下方輸入框
+        jsmeApplet.setAfterStructureModifiedCallback(function() {
+          if (isSyncingFromInput) return;
+          try {
+            const currentSmiles = jsmeApplet.smiles();
+            const smilesInput = document.getElementById('smiles-input');
+            if (smilesInput) {
+              smilesInput.value = currentSmiles || '';
+            }
+
+            const syncIndicator = document.getElementById('canvas-sync-indicator');
+            if (syncIndicator) {
+              if (currentSmiles && currentSmiles.trim().length > 0) {
+                syncIndicator.classList.remove('hidden');
+                hideErrorBanner();
+              } else {
+                syncIndicator.classList.add('hidden');
+              }
+            }
+            highlightMatchingPresetButton(currentSmiles);
+          } catch (cbErr) {
+            console.error('轉換 SMILES 時發生例外:', cbErr);
+          }
+        });
+
+        // 預設載入阿斯匹靈結構至畫布與輸入框
+        loadPreset('aspirin', false);
+      } catch (err) {
+        console.error('JSME 初始化失敗:', err && err.message ? err.message : String(err));
+        updateJsmeStatusBadge(false, 'JSME 載入異常');
+      }
+    }
+
+    function updateJsmeStatusBadge(isReady, text) {
+      const dot = document.getElementById('jsme-status-dot');
+      const label = document.getElementById('jsme-status-text');
+      if (!dot || !label) return;
+      dot.className = isReady
+        ? 'w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50'
+        : 'w-2 h-2 rounded-full bg-red-400';
+      label.textContent = text;
+    }
+
+    /**
+     * ==================== 核心功能：執行 PubChem PUG REST API 美國專利檢索 (支援三種檢索模式) ====================
+     */
+    async function executePatentSearch() {
+      const smilesInput = document.getElementById('smiles-input');
+      let smiles = smilesInput ? smilesInput.value.trim() : '';
+
+      // 若文字框為空，嘗試從 JSME 畫布即時取得 SMILES
+      if (!smiles && jsmeApplet && typeof jsmeApplet.smiles === 'function') {
+        smiles = (jsmeApplet.smiles() || '').trim();
+        if (smilesInput && smiles) smilesInput.value = smiles;
+      }
+
+      if (!smiles) {
+        showErrorBanner(
+          'ERR_EMPTY_INPUT',
+          '請先繪製化學結構或輸入 SMILES 字串',
+          '結構輸入區目前為空。請在左側 JSME 畫布繪製分子、點擊阿斯匹靈/布洛芬/咖啡因測試按鈕，或手動輸入 SMILES。'
+        );
+        return;
+      }
+
+      // 確保畫布與輸入框同步
+      if (jsmeApplet && typeof jsmeApplet.readGenericMolecularInput === 'function') {
+        try {
+          isSyncingFromInput = true;
+          jsmeApplet.readGenericMolecularInput(smiles);
+          setTimeout(() => { isSyncingFromInput = false; }, 100);
+        } catch (e) {
+          isSyncingFromInput = false;
+        }
+      }
+
+      hideErrorBanner();
+
+      // 依據使用者選擇的檢索模式分流處理
+      if (searchConfig.mode === 'substructure' || searchConfig.mode === 'similarity') {
+        await executeDerivativesGallerySearch(smiles, searchConfig.mode, searchConfig.threshold);
+        return;
+      }
+
+      // 模式 1：精確結構檢索 (Exact Match) — 隱藏衍生化合物畫廊，維持單一 CID 檢索邏輯
+      const gallerySection = document.getElementById('derivatives-gallery-section');
+      if (gallerySection) gallerySection.classList.add('hidden');
+
+      setSearchLoadingState(true, smiles);
+
+      try {
+        // =========================================================================
+        // 第一步：使用 HTTP POST 將 SMILES 轉換為 PubChem CID
+        // =========================================================================
+        const cidEndpoint = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/cids/JSON';
+        const cidResponse = await fetch(cidEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: `smiles=${encodeURIComponent(smiles)}`
+        });
+
+        let cidData = null;
+        try {
+          cidData = await cidResponse.json();
+        } catch (jsonErr) {
+          cidData = null;
+        }
+
+        const cid = cidData?.IdentifierList?.CID?.[0];
+
+        // 若無對應 CID
+        if (!cidResponse.ok || !cid || Number(cid) === 0) {
+          setSearchLoadingState(false);
+          switchResultViewState('skeleton');
+          showErrorBanner(
+            'CID_NOT_FOUND',
+            '查無完全相符的已知化合物，建議改用子結構或相似度檢索',
+            `輸入之 SMILES (${smiles}) 在 PubChem 資料庫中查無完全相符的 CID 紀錄，建議點擊右方按鈕改用「子結構檢索」或「結構相似度檢索」。`
+          );
+          return;
+        }
+
+        // 更新載入進度提示
+        const stepTitle = document.getElementById('loading-step-title');
+        const stepPreview = document.getElementById('loading-smiles-preview');
+        if (stepTitle) {
+          stepTitle.textContent = `步驟 2/2：已取得 PubChem CID (${cid})，正在平行載入化合物屬性、同義詞與美國專利清單...`;
+        }
+        if (stepPreview) {
+          stepPreview.textContent = `Promise.all([ /property/.../JSON, /xrefs/PatentID/JSON, /synonyms/JSON ])`;
+        }
+
+        // =========================================================================
+        // 第二步：平行呼叫 (Promise.all) 取得化合物屬性、關聯專利號清單與同義詞清單
+        // =========================================================================
+        const propUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/MolecularFormula,MolecularWeight,IUPACName,InChIKey,CanonicalSMILES/JSON`;
+        const patentUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/xrefs/PatentID/JSON`;
+        const synonymsUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`;
+        const imageUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/PNG`;
+
+        const [propResponse, patentResponse, synonymsResponse] = await Promise.all([
+          fetch(propUrl),
+          fetch(patentUrl),
+          fetch(synonymsUrl)
+        ]);
+
+        if (!propResponse.ok) {
+          throw new Error(`無法取得化合物屬性資料 (HTTP ${propResponse.status})`);
+        }
+
+        const propJson = await propResponse.json();
+        const compoundProps = propJson?.PropertyTable?.Properties?.[0] || {};
+
+        let rawPatentList = [];
+        if (patentResponse.ok) {
+          const patentJson = await patentResponse.json();
+          rawPatentList = patentJson?.InformationList?.Information?.[0]?.PatentID || [];
+        }
+
+        let rawSynonymsList = [];
+        if (synonymsResponse.ok) {
+          const synonymsJson = await synonymsResponse.json();
+          rawSynonymsList = synonymsJson?.InformationList?.Information?.[0]?.Synonym || [];
+        }
+
+        searchConfig.patentCacheByCid[cid] = rawPatentList;
+        searchConfig.synonymsCacheByCid[cid] = rawSynonymsList;
+
+        // 渲染化合物基本資訊卡片
+        renderCompoundProfileCard(cid, compoundProps, imageUrl, smiles, rawSynonymsList);
+
+        // =========================================================================
+        // 第三步：過濾、移除連字號 "-" 並分類「美國專利 (US Patents)」
+        // =========================================================================
+        processAndClassifyUsPatents(cid, rawPatentList);
+
+        // 切換至結果檢視狀態
+        setSearchLoadingState(false);
+        switchResultViewState('populated');
+
+      } catch (error) {
+        console.error('PubChem API 檢索發生錯誤:', error);
+        setSearchLoadingState(false);
+        switchResultViewState('skeleton');
+        showErrorBanner(
+          'API_NETWORK_ERROR',
+          'PubChem API 連線或資料解析異常',
+          `執行檢索時發生錯誤：${error.message || '請檢查網路連線狀態後再試一次。'}`
+        );
+      }
+    }
+
+    /**
+     * ==================== 模式 2 & 3：子結構檢索 / 2D 結構相似度檢索 API 流程 ====================
+     */
+    async function executeDerivativesGallerySearch(smiles, mode, threshold) {
+      const gallerySection = document.getElementById('derivatives-gallery-section');
+      const galleryLoading = document.getElementById('derivatives-loading-view');
+      const galleryGridWrapper = document.getElementById('derivatives-grid-wrapper');
+      const galleryModeBadge = document.getElementById('gallery-mode-badge');
+      const galleryCountBadge = document.getElementById('gallery-count-badge');
+      const loadingTitle = document.getElementById('derivatives-loading-title');
+      const loadingSubtitle = document.getElementById('derivatives-loading-subtitle');
+
+      if (gallerySection) gallerySection.classList.remove('hidden');
+      if (galleryLoading) galleryLoading.classList.remove('hidden');
+      if (galleryGridWrapper) galleryGridWrapper.classList.add('hidden');
+
+      const endpoint = mode === 'substructure'
+        ? 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastsubstructure/smiles/cids/JSON?MaxRecords=20'
+        : `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/fastsimilarity_2d/smiles/cids/JSON?Threshold=${threshold}&MaxRecords=20`;
+
+      if (galleryModeBadge) {
+        galleryModeBadge.textContent = mode === 'substructure'
+          ? '子結構檢索 (Top 20)'
+          : `2D 相似度 ≥ ${threshold}% (Top 20)`;
+      }
+      if (loadingTitle) {
+        loadingTitle.textContent = mode === 'substructure'
+          ? '步驟 1/2：正在透過 fastsubstructure 搜尋包含此骨架的前 20 個衍生化合物...'
+          : `步驟 1/2：正在透過 fastsimilarity_2d 搜尋結構相似度 ≥ ${threshold}% 的前 20 個類似化合物...`;
+      }
+      if (loadingSubtitle) {
+        loadingSubtitle.textContent = `POST ${endpoint}`;
+      }
+
+      setSearchLoadingState(true, smiles);
+
+      try {
+        const cidResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: `smiles=${encodeURIComponent(smiles)}`
+        });
+
+        let cidData = null;
+        try {
+          cidData = await cidResponse.json();
+        } catch (e) {
+          cidData = null;
+        }
+
+        const rawCids = cidData?.IdentifierList?.CID || [];
+        const validCids = rawCids.filter(c => c && Number(c) > 0).slice(0, 20);
+
+        if (!cidResponse.ok || validCids.length === 0) {
+          setSearchLoadingState(false);
+          if (gallerySection) gallerySection.classList.add('hidden');
+          switchResultViewState('skeleton');
+          showErrorBanner(
+            mode === 'substructure' ? 'NO_SUBSTRUCTURE_HITS' : 'NO_SIMILARITY_HITS',
+            mode === 'substructure'
+              ? '查無包含此化學子結構的衍生化合物'
+              : `查無結構相似度達 ${threshold}% 以上的類似化合物`,
+            mode === 'substructure'
+              ? '請嘗試簡化畫布上的化學結構骨架，或檢查原子價數是否正確。'
+              : `建議將左側「2D Tanimoto 相似度門檻滑桿」調低（例如調整至 80% ~ 85%）後再重新檢索。`
+          );
+          return;
+        }
+
+        if (loadingTitle) {
+          loadingTitle.textContent = `步驟 2/2：已找到 ${validCids.length} 個衍生化合物，正在批次載入分子式與分子量...`;
+        }
+        if (loadingSubtitle) {
+          loadingSubtitle.textContent = `GET /rest/pug/compound/cid/${validCids.slice(0, 5).join(',')}.../property/.../JSON`;
+        }
+
+        const batchPropUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${validCids.join(',')}/property/MolecularFormula,MolecularWeight,IUPACName,InChIKey,CanonicalSMILES/JSON`;
+        const propResponse = await fetch(batchPropUrl);
+
+        let propList = [];
+        if (propResponse.ok) {
+          const propJson = await propResponse.json();
+          propList = propJson?.PropertyTable?.Properties || [];
+        }
+
+        const propMap = {};
+        propList.forEach(p => {
+          if (p && p.CID) propMap[p.CID] = p;
+        });
+
+        searchConfig.derivatives = validCids.map((cid, index) => {
+          const p = propMap[cid] || {};
+          return {
+            rank: index + 1,
+            cid: cid,
+            MolecularFormula: p.MolecularFormula || '—',
+            MolecularWeight: p.MolecularWeight || '—',
+            IUPACName: p.IUPACName || '',
+            InChIKey: p.InChIKey || '—',
+            CanonicalSMILES: p.CanonicalSMILES || p.ConnectivitySMILES || p.IsomericSMILES || ''
+          };
+        });
+
+        if (galleryCountBadge) {
+          galleryCountBadge.textContent = `共 ${searchConfig.derivatives.length} 個衍生化合物`;
+        }
+
+        if (galleryLoading) galleryLoading.classList.add('hidden');
+        if (galleryGridWrapper) {
+          galleryGridWrapper.classList.remove('hidden');
+          searchConfig.isGalleryCollapsed = false;
+          const collapseText = document.getElementById('gallery-collapse-text');
+          if (collapseText) collapseText.textContent = '收合畫廊';
+        }
+
+        renderDerivativesGalleryCards();
+
+        setSearchLoadingState(false);
+        await selectDerivativeCompound(searchConfig.derivatives[0].cid);
+
+      } catch (err) {
+        console.error('衍生化合物檢索失敗:', err);
+        setSearchLoadingState(false);
+        if (galleryLoading) galleryLoading.classList.add('hidden');
+        switchResultViewState('skeleton');
+        showErrorBanner(
+          'FAST_SEARCH_ERROR',
+          'PubChem 快速結構檢索端點連線異常',
+          `執行衍生化合物檢索時發生錯誤：${err.message || '請稍後再試。'}`
+        );
+      }
+    }
+
+    /**
+     * 渲染「命中衍生化合物畫廊」的網格卡片
+     */
+    function renderDerivativesGalleryCards() {
+      const grid = document.getElementById('derivatives-grid');
+      if (!grid) return;
+
+      grid.innerHTML = searchConfig.derivatives.map(item => {
+        const isSelected = Number(searchConfig.selectedCid) === Number(item.cid);
+        const imgUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${item.cid}/PNG`;
+
+        const cardBorder = isSelected
+          ? 'border-2 border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-md'
+          : 'border border-slate-200/90 bg-white hover:border-blue-400 hover:shadow-sm';
+
+        const statusBadge = isSelected
+          ? `<span class="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded-full flex items-center space-x-1">
+               <span class="w-1.5 h-1.5 rounded-full bg-sky-200 animate-pulse"></span>
+               <span>檢視專利中</span>
+             </span>`
+          : `<span class="px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700 rounded-full transition">
+               點擊載入專利
+             </span>`;
+
+        return `
+          <button
+            type="button"
+            onclick="selectDerivativeCompound(${item.cid})"
+            id="derivative-card-${item.cid}"
+            class="group text-left rounded-xl p-3 transition-all flex flex-col justify-between ${cardBorder}"
+            title="${item.IUPACName ? item.IUPACName.replace(/"/g, '&quot;') : 'CID ' + item.cid}"
+          >
+            <div>
+              <div class="flex items-center justify-between gap-1 mb-2">
+                <span class="text-[10px] font-mono font-bold text-slate-400">#${item.rank}</span>
+                <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-slate-900 text-sky-300">
+                  CID ${item.cid}
+                </span>
+              </div>
+
+              <div class="w-full h-28 bg-white rounded-lg border border-slate-100 p-1.5 flex items-center justify-center overflow-hidden">
+                <img
+                  src="${imgUrl}"
+                  alt="CID ${item.cid} 2D Structure"
+                  loading="lazy"
+                  class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                  onerror="this.onerror=null; this.src='https://placehold.co/160x160/f8fafc/64748b?text=CID+${item.cid}';"
+                />
+              </div>
+
+              <div class="mt-2.5 space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-[10px] text-slate-400">分子式</span>
+                  <span class="font-mono font-bold text-slate-800 truncate max-w-[110px]">${item.MolecularFormula}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-[10px] text-slate-400">分子量</span>
+                  <span class="font-mono font-semibold text-slate-600">${item.MolecularWeight} <span class="text-[10px] text-slate-400">g/mol</span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+              ${statusBadge}
+              <svg class="w-3.5 h-3.5 ${isSelected ? 'text-blue-600' : 'text-slate-300 group-hover:text-blue-500'} transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    /**
+     * 點擊任一張衍生化合物卡片：切換化合物基本資訊與專屬美國專利清單
+     */
+    async function selectDerivativeCompound(cid) {
+      searchConfig.selectedCid = cid;
+      renderDerivativesGalleryCards();
+
+      const selectedIndicator = document.getElementById('gallery-selected-indicator');
+      if (selectedIndicator) {
+        selectedIndicator.textContent = `目前檢視：CID ${cid}`;
+      }
+
+      const derivativeItem = searchConfig.derivatives.find(d => Number(d.cid) === Number(cid)) || { cid };
+      const imageUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/PNG`;
+      const cachedSynonyms = searchConfig.synonymsCacheByCid[cid] || null;
+
+      renderCompoundProfileCard(cid, derivativeItem, imageUrl, derivativeItem.CanonicalSMILES || '', cachedSynonyms || []);
+      switchResultViewState('populated');
+
+      if (Array.isArray(searchConfig.patentCacheByCid[cid]) && Array.isArray(searchConfig.synonymsCacheByCid[cid])) {
+        processAndClassifyUsPatents(cid, searchConfig.patentCacheByCid[cid]);
+        return;
+      }
+
+      const patentSkeleton = document.getElementById('patent-skeleton-tbody');
+      const patentLoading = document.getElementById('patent-loading-tbody');
+      const patentPopulated = document.getElementById('patent-populated-tbody');
+      const paginationBar = document.getElementById('patent-pagination-bar');
+
+      if (patentSkeleton) patentSkeleton.classList.add('hidden');
+      if (patentPopulated) patentPopulated.classList.add('hidden');
+      if (paginationBar) paginationBar.classList.add('hidden');
+      if (patentLoading) patentLoading.classList.remove('hidden');
+
+      try {
+        const patentUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/xrefs/PatentID/JSON`;
+        const synonymsUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`;
+
+        const [patentResponse, synonymsResponse] = await Promise.all([
+          fetch(patentUrl),
+          fetch(synonymsUrl)
+        ]);
+
+        let rawPatentList = [];
+        if (patentResponse.ok) {
+          const patentJson = await patentResponse.json();
+          rawPatentList = patentJson?.InformationList?.Information?.[0]?.PatentID || [];
+        }
+
+        let rawSynonymsList = [];
+        if (synonymsResponse.ok) {
+          const synonymsJson = await synonymsResponse.json();
+          rawSynonymsList = synonymsJson?.InformationList?.Information?.[0]?.Synonym || [];
+        }
+
+        searchConfig.patentCacheByCid[cid] = rawPatentList;
+        searchConfig.synonymsCacheByCid[cid] = rawSynonymsList;
+
+        renderCompoundProfileCard(cid, derivativeItem, imageUrl, derivativeItem.CanonicalSMILES || '', rawSynonymsList);
+        processAndClassifyUsPatents(cid, rawPatentList);
+      } catch (err) {
+        console.error(`載入衍生化合物 CID ${cid} 專利清單或同義詞失敗:`, err);
+        processAndClassifyUsPatents(cid, []);
+      } finally {
+        if (patentLoading) patentLoading.classList.add('hidden');
+        if (patentPopulated) patentPopulated.classList.remove('hidden');
+      }
+    }
+
+    /**
+     * 收合或展開「命中衍生化合物畫廊」
+     */
+    function toggleDerivativesGalleryBody() {
+      const wrapper = document.getElementById('derivatives-grid-wrapper');
+      const textEl = document.getElementById('gallery-collapse-text');
+      if (!wrapper || !textEl) return;
+
+      searchConfig.isGalleryCollapsed = !searchConfig.isGalleryCollapsed;
+      if (searchConfig.isGalleryCollapsed) {
+        wrapper.classList.add('hidden');
+        textEl.textContent = '展開畫廊';
+      } else {
+        wrapper.classList.remove('hidden');
+        textEl.textContent = '收合畫廊';
+      }
+    }
+
+    /**
+     * 從 PubChem 同義詞陣列中，智慧過濾出前 5 個最常見的英文同義詞或 CAS 號
+     */
+    function extractTop5SynonymsAndCas(rawSynonyms, iupacName, inchiKey) {
+      if (!Array.isArray(rawSynonyms) || rawSynonyms.length === 0) return [];
+
+      const casRegex = /^\d{2,7}-\d{2}-\d$/;
+      const noiseRegex = /^(UNII-|EINECS|EC\s*\d|DTXSID|CHEMBL|SCHEMBL|CHEBI:|NSC|AKOS|ZINC|MFCD|HSDB|CCRIS|DB\d{4,}|NCGC|HMS|CCG-|STK|STL|MLS|SMR|BDBM|BRD-|HY-|CS-|AS-|FT-|W-|Q\d{4,}|C\d{5,})/i;
+
+      const selectedTerms = [];
+      const seenLower = new Set();
+
+      if (iupacName) seenLower.add(String(iupacName).trim().toLowerCase());
+      if (inchiKey) seenLower.add(String(inchiKey).trim().toLowerCase());
+
+      let casFound = false;
+
+      for (let i = 0; i < rawSynonyms.length; i++) {
+        if (selectedTerms.length >= 5) break;
+
+        const raw = String(rawSynonyms[i] || '').trim();
+        if (!raw) continue;
+
+        const lower = raw.toLowerCase();
+        if (seenLower.has(lower)) continue;
+
+        if (casRegex.test(raw)) {
+          if (!casFound) {
+            selectedTerms.push({ term: raw, type: 'CAS' });
+            seenLower.add(lower);
+            casFound = true;
+          }
+          continue;
+        }
+
+        if (raw.length < 3 || raw.length > 38) continue;
+        if (noiseRegex.test(raw)) continue;
+        if (/[\[\]{}"';\\/<>~@#$%^&*+=|?]/.test(raw)) continue;
+        if (/\b(usp|ep|bp|jp|monohydrate|anhydrous|grade|solution|tablet|capsule|injection|impurity|reference standard)\b/i.test(raw)) continue;
+        if (!/[a-zA-Z]{2,}/.test(raw)) continue;
+        if (!/^[\x20-\x7E]+$/.test(raw)) continue;
+
+        selectedTerms.push({ term: raw, type: 'Synonym' });
+        seenLower.add(lower);
+      }
+
+      if (!casFound) {
+        const firstCas = rawSynonyms.find(s => casRegex.test(String(s || '').trim()));
+        if (firstCas) {
+          const cleanCas = String(firstCas).trim();
+          if (selectedTerms.length >= 5) {
+            selectedTerms.pop();
+          }
+          selectedTerms.push({ term: cleanCas, type: 'CAS' });
+        }
+      }
+
+      return selectedTerms;
+    }
+
+    /**
+     * 組合 Google Patents 美國專利全文檢索語法並更新畫面
+     */
+    function buildAndRenderGooglePatentsQuery(inchiKey, iupacName, rawSynonyms) {
+      const top5Items = extractTop5SynonymsAndCas(rawSynonyms, iupacName, inchiKey);
+      const queryTerms = [];
+
+      const cleanInchiKey = (inchiKey && inchiKey !== '—') ? String(inchiKey).trim() : '';
+      const cleanIupac = (iupacName && iupacName !== '—' && !iupacName.includes('無提供')) ? String(iupacName).trim() : '';
+
+      if (cleanInchiKey) queryTerms.push(cleanInchiKey);
+      if (cleanIupac) queryTerms.push(cleanIupac);
+
+      top5Items.forEach(item => {
+        if (item.term && !queryTerms.includes(item.term)) {
+          queryTerms.push(item.term);
+        }
+      });
+
+      const quotedOrClause = queryTerms
+        .map(t => `"${String(t).replace(/"/g, '')}"`)
+        .join(' OR ');
+
+      const fullBooleanQuery = quotedOrClause
+        ? `(${quotedOrClause}) country:US`
+        : 'country:US';
+
+      patentState.googlePatentsQuery = fullBooleanQuery;
+
+      const queryBox = document.getElementById('google-patents-query-box');
+      if (queryBox) {
+        queryBox.value = fullBooleanQuery;
+      }
+
+      const statusBadge = document.getElementById('synonyms-status-badge');
+      if (statusBadge) {
+        statusBadge.textContent = `已納入 ${top5Items.length} 個同義詞/CAS號`;
+      }
+
+      const chipsContainer = document.getElementById('info-synonyms-chips');
+      if (chipsContainer) {
+        if (top5Items.length === 0) {
+          chipsContainer.innerHTML = `
+            <span class="text-[11px] font-mono text-slate-500 bg-white px-2.5 py-0.5 rounded border border-slate-200">
+              僅使用 InChIKey 與 IUPAC 學名建立檢索式
+            </span>
+          `;
+        } else {
+          chipsContainer.innerHTML = top5Items.map(item => {
+            const isCas = item.type === 'CAS';
+            const badgeStyle = isCas
+              ? 'bg-amber-50 text-amber-800 border-amber-300'
+              : 'bg-white text-slate-700 border-slate-200';
+            const prefix = isCas ? 'CAS: ' : '';
+            return `
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-mono font-medium border shadow-sm ${badgeStyle}">
+                ${prefix}${item.term}
+              </span>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    function copyGooglePatentsQuery() {
+      const queryBox = document.getElementById('google-patents-query-box');
+      const queryText = queryBox ? queryBox.value.trim() : patentState.googlePatentsQuery;
+      if (!queryText) return;
+
+      const tempInput = document.createElement('textarea');
+      tempInput.value = queryText;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      const btnText = document.getElementById('copy-gp-query-text');
+      if (btnText) {
+        btnText.textContent = '✓ 已複製檢索式！';
+        setTimeout(() => { btnText.textContent = '複製檢索式'; }, 1800);
+      }
+    }
+
+    function openGooglePatentsDeepSearch() {
+      const queryBox = document.getElementById('google-patents-query-box');
+      const query = queryBox ? queryBox.value.trim() : patentState.googlePatentsQuery;
+      if (!query) return;
+
+      const targetUrl = `https://patents.google.com/?q=${encodeURIComponent(query)}&country=US`;
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    /**
+     * 渲染「化合物基本資訊卡片」
+     */
+    function renderCompoundProfileCard(cid, props, imageUrl, fallbackSmiles, rawSynonyms = []) {
+      let displayTitle = `PubChem CID #${cid}`;
+      const matchedPreset = Object.values(PRESET_MOLECULES).find(
+        m => m.smiles === fallbackSmiles.trim()
+      );
+      if (matchedPreset) {
+        displayTitle = matchedPreset.name;
+      } else if (props.IUPACName) {
+        displayTitle = props.IUPACName.length > 42
+          ? props.IUPACName.slice(0, 42) + '...'
+          : props.IUPACName;
+      }
+
+      document.getElementById('info-common-name').textContent = displayTitle;
+      document.getElementById('info-cid').textContent = cid;
+
+      const cidLink = document.getElementById('info-cid-link');
+      if (cidLink) {
+        cidLink.href = `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}`;
+      }
+
+      const imgEl = document.getElementById('info-structure-img');
+      if (imgEl) {
+        imgEl.src = imageUrl;
+      }
+
+      const canonicalSmiles = props.CanonicalSMILES || props.ConnectivitySMILES || props.IsomericSMILES || fallbackSmiles;
+      const inchiKey = props.InChIKey || '—';
+      const iupacName = props.IUPACName || '（PubChem 無提供 IUPAC 名稱）';
+
+      patentState.cid = cid;
+      patentState.smiles = canonicalSmiles || '';
+      patentState.inchiKey = inchiKey !== '—' ? inchiKey : '';
+      patentState.iupacName = props.IUPACName || '';
+
+      document.getElementById('info-iupac').textContent = iupacName;
+      document.getElementById('info-canonical-smiles').textContent = canonicalSmiles || '—';
+      document.getElementById('info-formula').textContent = props.MolecularFormula || '—';
+      document.getElementById('info-mw').textContent = props.MolecularWeight ? `${props.MolecularWeight} g/mol` : '—';
+      document.getElementById('info-inchikey').textContent = inchiKey;
+
+      buildAndRenderGooglePatentsQuery(inchiKey, props.IUPACName || '', rawSynonyms);
+    }
+
+    /**
+     * 篩選出以 US 開頭的專利編號（不分大小寫），將連字號 "-" 移除（例如 US-2014178487-A1 -> US2014178487A1），
+     * 並分類為「公告專利 (Granted)」與「公開申請案 (Applications)」
+     */
+    function processAndClassifyUsPatents(cid, rawPatentIds) {
+      const seen = new Set();
+      const allUs = [];
+      const granted = [];
+      const applications = [];
+
+      for (let i = 0; i < rawPatentIds.length; i++) {
+        const rawId = String(rawPatentIds[i] || '').trim();
+        // 篩選以 US 開頭的專利編號（不分大小寫）
+        if (!/^US/i.test(rawId)) continue;
+
+        // 關鍵修正：將 PubChem 回傳編號中的 "-" 移除 (例如 US-2014178487-A1 修改為 US2014178487A1)
+        const normalizedId = normalizeUsPatentId(rawId);
+        if (!normalizedId || seen.has(normalizedId)) continue;
+        seen.add(normalizedId);
+
+        // 分類規則：
+        // b. 「公開申請案 (Applications)」：編號中含 A1、A2、A9 等字樣
+        // a. 「公告專利 (Granted Patents)」：編號中含 B1、B2 或早期純數字/A 公告之美國專利
+        const isApplication = /A\d+/i.test(normalizedId);
+        const isGranted = /B\d+/i.test(normalizedId) || /^US\d+$/i.test(normalizedId) || !isApplication;
+
+        let kindLabel = 'Granted Patent';
+        if (isApplication) {
+          const matchA = normalizedId.match(/A\d+/i);
+          kindLabel = matchA ? `公開申請案 (${matchA[0]})` : '公開申請案 (App)';
+        } else {
+          const matchB = normalizedId.match(/B\d+/i);
+          if (matchB) {
+            kindLabel = `公告專利 (${matchB[0]})`;
+          } else if (/^US\d+A$/i.test(normalizedId)) {
+            kindLabel = '公告專利 (A)';
+          } else if (/^US\d+$/i.test(normalizedId)) {
+            kindLabel = '公告專利 (純數字)';
+          } else {
+            kindLabel = '公告專利 (Granted)';
+          }
+        }
+
+        const patentItem = {
+          id: normalizedId,
+          category: isApplication ? 'applications' : 'granted',
+          kindLabel: kindLabel
+        };
+
+        allUs.push(patentItem);
+        if (isApplication) {
+          applications.push(patentItem);
+        } else if (isGranted) {
+          granted.push(patentItem);
+        }
+      }
+
+      patentState.cid = cid;
+      patentState.allUsPatents = allUs;
+      patentState.grantedPatents = granted;
+      patentState.applicationPatents = applications;
+      patentState.activeTab = 'all';
+      patentState.filterQuery = '';
+      patentState.currentPage = 1;
+
+      const filterInput = document.getElementById('patent-filter-input');
+      if (filterInput) filterInput.value = '';
+      const clearBtn = document.getElementById('clear-patent-filter-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+
+      document.getElementById('tab-count-all').textContent = allUs.length.toLocaleString();
+      document.getElementById('tab-count-granted').textContent = granted.length.toLocaleString();
+      document.getElementById('tab-count-applications').textContent = applications.length.toLocaleString();
+      document.getElementById('patent-total-badge').textContent = `美國專利總計：${allUs.length.toLocaleString()} 筆`;
+
+      updateTabButtonsUI('all');
+      applyPatentFilterAndRender();
+    }
+
+    function setPatentCategoryTab(tabName) {
+      patentState.activeTab = tabName;
+      patentState.currentPage = 1;
+      updateTabButtonsUI(tabName);
+      applyPatentFilterAndRender();
+    }
+
+    function updateTabButtonsUI(activeTab) {
+      const tabs = ['all', 'granted', 'applications'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (!btn) return;
+        if (t === activeTab) {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-lab-900 shadow-sm transition flex items-center space-x-1.5';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5';
+        }
+      });
+    }
+
+    /**
+     * 即時專利編號搜尋過濾（支援輸入含 "-" 或不含 "-" 的專利號皆可比對）
+     */
+    function handlePatentFilterInput() {
+      const input = document.getElementById('patent-filter-input');
+      const query = input ? input.value.trim() : '';
+      patentState.filterQuery = query;
+      patentState.currentPage = 1;
+
+      const clearBtn = document.getElementById('clear-patent-filter-btn');
+      if (clearBtn) {
+        if (query.length > 0) {
+          clearBtn.classList.remove('hidden');
+        } else {
+          clearBtn.classList.add('hidden');
+        }
+      }
+
+      applyPatentFilterAndRender();
+    }
+
+    function clearPatentFilter() {
+      const input = document.getElementById('patent-filter-input');
+      if (input) input.value = '';
+      handlePatentFilterInput();
+    }
+
+    /**
+     * 根據目前頁籤與關鍵字過濾專利清單，並渲染目前頁次 (每頁 50 筆)
+     */
+    function applyPatentFilterAndRender() {
+      let sourceList = patentState.allUsPatents;
+      if (patentState.activeTab === 'granted') {
+        sourceList = patentState.grantedPatents;
+      } else if (patentState.activeTab === 'applications') {
+        sourceList = patentState.applicationPatents;
+      }
+
+      // 將搜尋字串中的 "-" 一併移除再比對，讓使用者貼入 US-2014178487-A1 或 US2014178487A1 都能找到
+      const q = normalizeUsPatentId(patentState.filterQuery);
+      if (q) {
+        patentState.filteredList = sourceList.filter(item => item.id.includes(q));
+      } else {
+        patentState.filteredList = sourceList;
+      }
+
+      const exportBtn = document.getElementById('export-csv-btn');
+      const exportBtnText = document.getElementById('export-csv-btn-text');
+      if (exportBtn) {
+        exportBtn.disabled = patentState.filteredList.length === 0;
+      }
+      if (exportBtnText) {
+        exportBtnText.textContent = patentState.filteredList.length > 0
+          ? `匯出 CSV (${patentState.filteredList.length.toLocaleString()} 筆)`
+          : '匯出 CSV';
+      }
+
+      renderCurrentPatentPage();
+    }
+
+    /**
+     * 渲染當前分頁的 50 筆美國專利列，並針對本頁前 10 筆自動呼叫後端 /api/patent_details
+     */
+    function renderCurrentPatentPage() {
+      const tbody = document.getElementById('patent-populated-tbody');
+      const paginationBar = document.getElementById('patent-pagination-bar');
+      const metaFetchBar = document.getElementById('patent-meta-fetch-bar');
+      if (!tbody) return;
+
+      const totalCount = patentState.filteredList.length;
+      const totalPages = Math.max(1, Math.ceil(totalCount / PATENTS_PER_PAGE));
+
+      if (patentState.currentPage > totalPages) {
+        patentState.currentPage = totalPages;
+      }
+      if (patentState.currentPage < 1) {
+        patentState.currentPage = 1;
+      }
+
+      if (totalCount === 0) {
+        if (paginationBar) paginationBar.classList.add('hidden');
+        if (metaFetchBar) metaFetchBar.classList.add('hidden');
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-12 px-6 text-center text-slate-500">
+              <p class="text-sm font-bold text-slate-700">目前分類或過濾條件下查無符合的美國專利</p>
+              <p class="text-xs text-slate-400 mt-1">請嘗試切換上方頁籤（全部 / 公告專利 / 公開申請案）或清除專利號搜尋關鍵字。</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      if (paginationBar) paginationBar.classList.remove('hidden');
+
+      const startIndex = (patentState.currentPage - 1) * PATENTS_PER_PAGE;
+      const endIndex = Math.min(startIndex + PATENTS_PER_PAGE, totalCount);
+      const pageItems = patentState.filteredList.slice(startIndex, endIndex);
+
+      document.getElementById('page-start-index').textContent = (startIndex + 1).toLocaleString();
+      document.getElementById('page-end-index').textContent = endIndex.toLocaleString();
+      document.getElementById('page-total-count').textContent = totalCount.toLocaleString();
+      document.getElementById('page-total-pages').textContent = totalPages.toLocaleString();
+
+      const jumpInput = document.getElementById('page-jump-input');
+      if (jumpInput) {
+        jumpInput.max = totalPages;
+        jumpInput.value = patentState.currentPage;
+      }
+
+      document.getElementById('btn-first-page').disabled = patentState.currentPage <= 1;
+      document.getElementById('btn-prev-page').disabled = patentState.currentPage <= 1;
+      document.getElementById('btn-next-page').disabled = patentState.currentPage >= totalPages;
+      document.getElementById('btn-last-page').disabled = patentState.currentPage >= totalPages;
+
+      // 渲染表格列：顯示與網址皆使用已移除 "-" 的專利編號（例如 US2014178487A1）
+      tbody.innerHTML = pageItems.map((item, idx) => {
+        const globalRank = startIndex + idx + 1;
+        const isTop10OnPage = idx < 10;
+        const isGranted = item.category === 'granted';
+        const cleanPatentId = normalizeUsPatentId(item.id);
+
+        const categoryBadge = isGranted
+          ? `<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+               <span>${item.kindLabel}</span>
+             </span>`
+          : `<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+               <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+               <span>${item.kindLabel}</span>
+             </span>`;
+
+        // 對應的 Google Patents 查看網址與 USPTO 網址同步使用移除 "-" 後的編號
+        const googlePatentsUrl = `https://patents.google.com/patent/${cleanPatentId}/en`;
+        const usptoPdfNumber = cleanPatentId.replace(/^US/i, '');
+        const usptoUrl = `https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/${usptoPdfNumber}`;
+
+        return `
+          <tr class="hover:bg-blue-50/40 transition align-top group">
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-400 font-semibold">
+              ${globalRank}
+              ${isTop10OnPage ? '<span class="block text-[9px] font-mono text-indigo-600 bg-indigo-50 px-1 py-0.2 rounded mt-0.5 w-fit">Top 10</span>' : ''}
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-mono font-bold text-sm text-lab-900">${cleanPatentId}</div>
+              <div class="mt-1">${categoryBadge}</div>
+            </td>
+            <td class="py-3.5 px-4" id="patent-meta-cell-${cleanPatentId}">
+              ${renderPatentMetaCellContent(cleanPatentId, isTop10OnPage)}
+            </td>
+            <td class="py-3.5 px-4 text-right whitespace-nowrap">
+              <div class="inline-flex flex-col sm:flex-row items-end sm:items-center justify-end gap-1.5">
+                <a
+                  href="${googlePatentsUrl}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 transition shadow-sm"
+                  title="開啟 ${googlePatentsUrl}"
+                >
+                  <span>Google Patents 查看</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                  </svg>
+                </a>
+                <a
+                  href="${usptoUrl}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-200 transition shadow-sm"
+                  title="開啟 ${usptoUrl}"
+                >
+                  <span>USPTO 專利局查看</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                  </svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      fetchCurrentPageTop10PatentDetails(false);
+    }
+
+    function escapeHtmlStr(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderPatentMetaCellContent(patentId, isTop10OnPage) {
+      const cleanId = normalizeUsPatentId(patentId);
+      const meta = patentState.detailsCache[cleanId];
+
+      if (meta && !meta.loading) {
+        const isExpanded = Boolean(patentState.expandedAbstracts[cleanId]);
+        const safeTitle = escapeHtmlStr(meta.title || '（無標題資訊）');
+        const safeAssignee = escapeHtmlStr(meta.assignee || '未記載申請人');
+        const safeDate = escapeHtmlStr(meta.date || '—');
+        const safeAbstract = escapeHtmlStr(meta.abstract || '無公開摘要');
+
+        return `
+          <div class="space-y-1.5">
+            <div class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+              ${safeTitle}
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-[11px]">
+              <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                <svg class="w-3 h-3 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                <span>申請人：<strong class="text-slate-900">${safeAssignee}</strong></span>
+              </span>
+
+              <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-blue-50/70 text-blue-800 border border-blue-200/70 font-mono">
+                <svg class="w-3 h-3 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span>日期：${safeDate}</span>
+              </span>
+            </div>
+
+            <div
+              onclick="togglePatentAbstract('${cleanId}')"
+              class="cursor-pointer group/abs bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/80 hover:border-indigo-200 rounded-lg p-2.5 transition"
+              title="點擊展開或收合完整專利摘要"
+            >
+              <div class="flex items-center justify-between text-[11px] font-semibold text-indigo-700 mb-1">
+                <span>專利摘要 (DC.description)</span>
+                <span class="inline-flex items-center space-x-1 underline underline-offset-2">
+                  <span>${isExpanded ? '收合摘要 ▲' : '點擊展開完整摘要 ▼'}</span>
+                </span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}">
+                ${safeAbstract}
+              </p>
+            </div>
+          </div>
+        `;
+      }
+
+      if (meta && meta.loading) {
+        return `
+          <div class="space-y-2 py-1">
+            <div class="flex items-center space-x-2 text-xs text-indigo-700 font-medium">
+              <span class="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0"></span>
+              <span>正在從後端 <code class="font-mono">/api/patent_details</code> 解析 Google Patents Meta 標籤...</span>
+            </div>
+            <div class="h-4 w-3/4 rounded skeleton-shimmer"></div>
+            <div class="h-3 w-1/2 rounded skeleton-shimmer"></div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="flex items-center justify-between gap-2 py-1">
+          <span class="text-xs text-slate-400">
+            ${isTop10OnPage ? '等待後端載入專利標題、申請人與摘要...' : '（預設自動抓取本頁前 10 筆專利詳情）'}
+          </span>
+          <button
+            type="button"
+            onclick="fetchSinglePatentDetailFromBackend('${cleanId}')"
+            class="text-xs font-semibold text-indigo-700 hover:text-white bg-indigo-50 hover:bg-indigo-600 px-2.5 py-1 rounded-lg border border-indigo-200 transition shrink-0"
+          >
+            載入此筆專利摘要
+          </button>
+        </div>
+      `;
+    }
+
+    function togglePatentAbstract(patentId) {
+      const cleanId = normalizeUsPatentId(patentId);
+      patentState.expandedAbstracts[cleanId] = !patentState.expandedAbstracts[cleanId];
+      const cell = document.getElementById(`patent-meta-cell-${cleanId}`);
+      if (cell) {
+        cell.innerHTML = renderPatentMetaCellContent(cleanId, true);
+      }
+    }
+
+    /**
+     * 針對當前頁面顯示的前 10 筆美國專利，呼叫 FastAPI 後端 `/api/patent_details?patent_ids=US...,US...`
+     */
+    async function fetchCurrentPageTop10PatentDetails(forceRefresh = false) {
+      const startIndex = (patentState.currentPage - 1) * PATENTS_PER_PAGE;
+      const top10Items = patentState.filteredList.slice(startIndex, startIndex + 10);
+      if (top10Items.length === 0) return;
+
+      const top10Ids = top10Items.map(item => normalizeUsPatentId(item.id));
+      const idsToFetch = forceRefresh
+        ? top10Ids
+        : top10Ids.filter(id => !patentState.detailsCache[id] || patentState.detailsCache[id].loading);
+
+      const metaFetchBar = document.getElementById('patent-meta-fetch-bar');
+      const metaSpinner = document.getElementById('patent-meta-spinner');
+      const metaStatusText = document.getElementById('patent-meta-status-text');
+
+      if (metaFetchBar) metaFetchBar.classList.remove('hidden');
+
+      if (idsToFetch.length === 0) {
+        if (metaSpinner) metaSpinner.classList.add('hidden');
+        if (metaStatusText) {
+          metaStatusText.innerHTML = `✓ 已載入本頁前 ${top10Ids.length} 筆美國專利之標題、申請人 (Assignee)、日期與摘要（點擊摘要區塊可展開全文）。`;
+        }
+        return;
+      }
+
+      idsToFetch.forEach(id => {
+        patentState.detailsCache[id] = { loading: true };
+        const cell = document.getElementById(`patent-meta-cell-${id}`);
+        if (cell) cell.innerHTML = renderPatentMetaCellContent(id, true);
+      });
+
+      if (metaSpinner) metaSpinner.classList.remove('hidden');
+      if (metaStatusText) {
+        metaStatusText.innerHTML = `正在呼叫後端 <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-indigo-200 text-indigo-700">/api/patent_details?patent_ids=${idsToFetch.slice(0, 3).join(',')}...</code> 抓取本頁前 ${top10Ids.length} 筆專利詳情...`;
+      }
+
+      try {
+        const apiUrl = `/api/patent_details?patent_ids=${encodeURIComponent(idsToFetch.join(','))}`;
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const resultsMap = data?.results || {};
+
+        updateFastApiStatusBadge(true, 'FastAPI 後端已連線');
+
+        idsToFetch.forEach(id => {
+          if (resultsMap[id]) {
+            patentState.detailsCache[id] = resultsMap[id];
+          } else {
+            patentState.detailsCache[id] = {
+              patent_id: id,
+              title: '無法取得此專利標題',
+              assignee: '—',
+              date: '—',
+              abstract: '查無公開摘要資料。',
+              fetched: false
+            };
+          }
+          const cell = document.getElementById(`patent-meta-cell-${id}`);
+          if (cell) cell.innerHTML = renderPatentMetaCellContent(id, true);
+        });
+
+        if (metaSpinner) metaSpinner.classList.add('hidden');
+        if (metaStatusText) {
+          metaStatusText.innerHTML = `✓ 已透過 FastAPI (<code class="font-mono">httpx + BeautifulSoup4</code>) 完成本頁前 ${top10Ids.length} 筆 Google Patents Meta 標籤解析。`;
+        }
+      } catch (err) {
+        console.warn('呼叫本地 FastAPI /api/patent_details 失敗:', err);
+        updateFastApiStatusBadge(false, '請啟動 python app.py');
+
+        idsToFetch.forEach(id => {
+          delete patentState.detailsCache[id];
+          const cell = document.getElementById(`patent-meta-cell-${id}`);
+          if (cell) cell.innerHTML = renderPatentMetaCellContent(id, true);
+        });
+
+        if (metaSpinner) metaSpinner.classList.add('hidden');
+        if (metaStatusText) {
+          metaStatusText.innerHTML = `⚠️ 尚未偵測到本地 FastAPI 後端 (<code class="font-mono">/api/patent_details</code>)。請在終端機執行 <code class="font-mono font-bold text-indigo-900">uvicorn app:app --reload</code> 後點擊右方重新整理。`;
+        }
+      }
+    }
+
+    async function fetchSinglePatentDetailFromBackend(patentId) {
+      const cleanId = normalizeUsPatentId(patentId);
+      patentState.detailsCache[cleanId] = { loading: true };
+      const cell = document.getElementById(`patent-meta-cell-${cleanId}`);
+      if (cell) cell.innerHTML = renderPatentMetaCellContent(cleanId, false);
+
+      try {
+        const response = await fetch(`/api/patent_details?patent_ids=${encodeURIComponent(cleanId)}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const detail = data?.results?.[cleanId];
+        if (detail) {
+          patentState.detailsCache[cleanId] = detail;
+          updateFastApiStatusBadge(true, 'FastAPI 後端已連線');
+        } else {
+          delete patentState.detailsCache[cleanId];
+        }
+      } catch (err) {
+        delete patentState.detailsCache[cleanId];
+        updateFastApiStatusBadge(false, '請啟動 python app.py');
+      }
+
+      if (cell) cell.innerHTML = renderPatentMetaCellContent(cleanId, false);
+    }
+
+    function goToPatentPage(pageNum) {
+      const totalPages = Math.max(1, Math.ceil(patentState.filteredList.length / PATENTS_PER_PAGE));
+      const target = Math.max(1, Math.min(totalPages, parseInt(pageNum, 10) || 1));
+      patentState.currentPage = target;
+      renderCurrentPatentPage();
+    }
+
+    function changePatentPage(delta) {
+      goToPatentPage(patentState.currentPage + delta);
+    }
+
+    function goToLastPatentPage() {
+      const totalPages = Math.max(1, Math.ceil(patentState.filteredList.length / PATENTS_PER_PAGE));
+      goToPatentPage(totalPages);
+    }
+
+    function handlePageJumpInput(val) {
+      goToPatentPage(parseInt(val, 10));
+    }
+
+    /**
+     * 匯出目前篩選出的所有美國專利報告為 UTF-8 BOM 格式 .csv 檔案供 Excel 開啟
+     */
+    function exportFilteredPatentsToCSV() {
+      if (!patentState.filteredList || patentState.filteredList.length === 0) return;
+
+      const currentSmilesInput = document.getElementById('smiles-input')?.value.trim() || '';
+      const exportCid = patentState.cid || '';
+      const exportSmiles = patentState.smiles || currentSmilesInput;
+      const exportInchiKey = patentState.inchiKey || (document.getElementById('info-inchikey')?.textContent.trim() || '');
+
+      const headers = [
+        '美國專利編號 (Patent ID)',
+        '專利類型 (Patent Type)',
+        '專利分類明細 (Category Detail)',
+        '專利標題 (DC.title)',
+        '申請人 (Assignee)',
+        '專利日期 (DC.date)',
+        '專利摘要 (DC.description)',
+        '對應化合物 CID (PubChem CID)',
+        '化學結構 SMILES',
+        'InChIKey',
+        'Google Patents 連結'
+      ];
+
+      const rows = [headers];
+
+      patentState.filteredList.forEach(item => {
+        const cleanPatentId = normalizeUsPatentId(item.id);
+        const patentType = item.category === 'granted' ? 'Granted' : 'Application';
+        const googlePatentsUrl = `https://patents.google.com/patent/${cleanPatentId}/en`;
+        const cachedMeta = patentState.detailsCache[cleanPatentId] || {};
+
+        rows.push([
+          cleanPatentId,
+          patentType,
+          item.kindLabel,
+          cachedMeta.title || '',
+          cachedMeta.assignee || '',
+          cachedMeta.date || '',
+          cachedMeta.abstract || '',
+          exportCid,
+          exportSmiles,
+          exportInchiKey,
+          googlePatentsUrl
+        ]);
+      });
+
+      const csvContent = '\uFEFF' + rows
+        .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\r\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `US_Patents_Report_CID_${exportCid || 'query'}_${patentState.activeTab}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function copySmiles() {
+      const smilesInput = document.getElementById('smiles-input');
+      const smiles = smilesInput ? smilesInput.value.trim() : '';
+      if (!smiles) return;
+
+      smilesInput.select();
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+
+      const copyText = document.getElementById('copy-btn-text');
+      if (copyText) {
+        copyText.textContent = '已複製！';
+        setTimeout(() => { copyText.textContent = '複製'; }, 1600);
+      }
+    }
+
+    function copyInChIKey() {
+      const inchiEl = document.getElementById('info-inchikey');
+      const text = inchiEl ? inchiEl.textContent.trim() : '';
+      if (!text || text === '—') return;
+
+      const tempInput = document.createElement('input');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      const btnText = document.getElementById('copy-inchikey-text');
+      if (btnText) {
+        btnText.textContent = '已複製！';
+        setTimeout(() => { btnText.textContent = '複製'; }, 1600);
+      }
+    }
+
+    function setSearchLoadingState(isLoading, smiles = '') {
+      const mainBtn = document.getElementById('main-search-btn');
+      const btnText = document.getElementById('search-btn-text');
+
+      if (mainBtn) mainBtn.disabled = isLoading;
+      if (btnText) {
+        btnText.textContent = isLoading
+          ? '正在檢索 PubChem 與美國專利資料庫...'
+          : '開始檢索美國專利 (Search US Patents)';
+      }
+
+      if (isLoading) {
+        const stepTitle = document.getElementById('loading-step-title');
+        const stepPreview = document.getElementById('loading-smiles-preview');
+        if (stepTitle) {
+          stepTitle.textContent = '步驟 1/2：正在透過 HTTP POST 將 SMILES 轉換為 PubChem CID...';
+        }
+        if (stepPreview) {
+          stepPreview.textContent = `SMILES: ${smiles}`;
+        }
+        switchResultViewState('loading');
+      }
+    }
+
+    function switchResultViewState(state) {
+      const compoundSkeleton = document.getElementById('compound-skeleton-view');
+      const compoundLoading = document.getElementById('compound-loading-view');
+      const compoundPopulated = document.getElementById('compound-populated-view');
+
+      const patentSkeleton = document.getElementById('patent-skeleton-tbody');
+      const patentLoading = document.getElementById('patent-loading-tbody');
+      const patentPopulated = document.getElementById('patent-populated-tbody');
+      const patentSkeletonFooter = document.getElementById('patent-skeleton-footer');
+      const paginationBar = document.getElementById('patent-pagination-bar');
+
+      const compoundStatusTag = document.getElementById('compound-status-tag');
+
+      compoundSkeleton.classList.add('hidden');
+      compoundLoading.classList.add('hidden');
+      compoundPopulated.classList.add('hidden');
+      patentSkeleton.classList.add('hidden');
+      patentLoading.classList.add('hidden');
+      patentPopulated.classList.add('hidden');
+      patentSkeletonFooter.classList.add('hidden');
+
+      if (state === 'skeleton') {
+        compoundSkeleton.classList.remove('hidden');
+        patentSkeleton.classList.remove('hidden');
+        patentSkeletonFooter.classList.remove('hidden');
+        if (paginationBar) paginationBar.classList.add('hidden');
+        compoundStatusTag.textContent = '等待結構檢索...';
+        compoundStatusTag.className = 'text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+      } else if (state === 'loading') {
+        compoundLoading.classList.remove('hidden');
+        patentLoading.classList.remove('hidden');
+        if (paginationBar) paginationBar.classList.add('hidden');
+        compoundStatusTag.textContent = 'PubChem API 檢索中...';
+        compoundStatusTag.className = 'text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-blue-900 text-sky-300 border border-sky-500/40 animate-pulse';
+      } else if (state === 'populated') {
+        compoundPopulated.classList.remove('hidden');
+        patentPopulated.classList.remove('hidden');
+        compoundStatusTag.textContent = `CID #${patentState.cid} 已同步`;
+        compoundStatusTag.className = 'text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40';
+      }
+    }
+
+    function showErrorBanner(code, title, message) {
+      const banner = document.getElementById('error-banner');
+      const codeBadge = document.getElementById('error-code-badge');
+      const titleEl = document.getElementById('error-title');
+      const msgEl = document.getElementById('error-message');
+
+      if (codeBadge) codeBadge.textContent = code;
+      if (titleEl) titleEl.textContent = title;
+      if (msgEl) msgEl.textContent = message;
+      if (banner) {
+        banner.classList.remove('hidden');
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function hideErrorBanner() {
+      const banner = document.getElementById('error-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function updateFastApiStatusBadge(isOnline, text) {
+      patentState.backendAvailable = isOnline;
+      const dot = document.getElementById('fastapi-status-dot');
+      const label = document.getElementById('fastapi-status-text');
+      if (!dot || !label) return;
+      dot.className = isOnline
+        ? 'w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50'
+        : 'w-2 h-2 rounded-full bg-amber-400';
+      label.textContent = text;
+    }
+
+    async function checkFastApiBackendHealth() {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          updateFastApiStatusBadge(true, 'FastAPI 後端已連線');
+        } else {
+          updateFastApiStatusBadge(false, 'FastAPI 未啟動');
+        }
+      } catch (e) {
+        updateFastApiStatusBadge(false, '靜態預覽模式 (未連後端)');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      checkFastApiBackendHealth();
+      setTimeout(() => {
+        if (!jsmeApplet) {
+          updateJsmeStatusBadge(false, 'JSME 載入逾時');
+        }
+      }, 8000);
+    });
+  </script>
+</body>
+</html>
