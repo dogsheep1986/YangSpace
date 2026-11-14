@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>化學結構式美國專利檢索系統 | US Patent Chemical Structure Search v4.1</title>
+  <title>化學結構式美國專利檢索系統 | US Patent Chemical Structure Search v4.2</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -102,7 +102,7 @@
               化學結構式美國專利檢索系統
             </h1>
             <span class="px-2 py-0.5 text-[11px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full">
-              v4.1 Normalized ID
+              v4.2
             </span>
           </div>
           <p class="text-xs text-slate-300/80 hidden sm:block font-mono">
@@ -113,10 +113,6 @@
 
       <!-- 右側系統連線與引擎狀態徽章 -->
       <div class="flex items-center space-x-3">
-        <div class="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/70 border border-slate-700/80 text-xs" title="本地 FastAPI /api/patent_details 連線狀態">
-          <span id="fastapi-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span id="fastapi-status-text" class="font-mono text-slate-200">FastAPI 偵測中...</span>
-        </div>
         <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900/70 border border-slate-700/80 text-xs">
           <span id="jsme-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span id="jsme-status-text" class="font-mono text-slate-200">JSME 載入中...</span>
@@ -913,61 +909,40 @@
             </div>
           </div>
 
-          <!-- 專利表格本體 -->
+          <!-- 專利表格本體 (3 欄精簡配置：# / 美國專利編號 & 類型 / 外部專利資料庫檢視) -->
           <div class="overflow-x-auto flex-1">
-            <!-- 本頁前 10 筆 Google Patents Meta 自動抓取狀態提示條 -->
-            <div id="patent-meta-fetch-bar" class="hidden bg-indigo-50/80 border-b border-indigo-100 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div class="flex items-center space-x-2 text-indigo-950">
-                <span id="patent-meta-spinner" class="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
-                <span id="patent-meta-status-text" class="font-medium">
-                  正在呼叫後端 <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-indigo-200 text-indigo-700">/api/patent_details</code> 抓取本頁前 10 筆專利的標題、申請人、日期與摘要...
-                </span>
-              </div>
-              <button
-                type="button"
-                onclick="fetchCurrentPageTop10PatentDetails(true)"
-                class="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-white hover:bg-indigo-100/70 px-2.5 py-1 rounded border border-indigo-200 transition"
-              >
-                重新整理本頁前 10 筆詳情
-              </button>
-            </div>
-
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="bg-slate-100/90 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                  <th class="py-3 px-4 w-14">#</th>
-                  <th class="py-3 px-4 w-48">美國專利編號 &amp; 類型</th>
-                  <th class="py-3 px-4">專利標題 / 申請人 (Assignee) / 日期 / 摘要 (點擊展開)</th>
-                  <th class="py-3 px-4 w-48 text-right">外部專利資料庫檢視</th>
+                  <th class="py-3 px-5 w-20">#</th>
+                  <th class="py-3 px-5">美國專利編號 &amp; 類型</th>
+                  <th class="py-3 px-5 text-right">外部專利資料庫檢視</th>
                 </tr>
               </thead>
 
               <!-- 1. 空白骨架 Tbody (Skeleton Rows) -->
               <tbody id="patent-skeleton-tbody" class="divide-y divide-slate-100">
                 <tr class="bg-white">
-                  <td class="py-4 px-4"><div class="h-4 w-6 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-5 w-32 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-5 w-64 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-7 w-40 ml-auto rounded-lg skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-4 w-8 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-5 w-48 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-7 w-48 ml-auto rounded-lg skeleton-shimmer"></div></td>
                 </tr>
                 <tr class="bg-white">
-                  <td class="py-4 px-4"><div class="h-4 w-6 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-5 w-32 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-5 w-64 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-7 w-40 ml-auto rounded-lg skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-4 w-8 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-5 w-48 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-7 w-48 ml-auto rounded-lg skeleton-shimmer"></div></td>
                 </tr>
                 <tr class="bg-white">
-                  <td class="py-4 px-4"><div class="h-4 w-6 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-5 w-32 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-5 w-64 rounded skeleton-shimmer"></div></td>
-                  <td class="py-4 px-4"><div class="h-7 w-40 ml-auto rounded-lg skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-4 w-8 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-5 w-48 rounded skeleton-shimmer"></div></td>
+                  <td class="py-4 px-5"><div class="h-7 w-48 ml-auto rounded-lg skeleton-shimmer"></div></td>
                 </tr>
               </tbody>
 
               <!-- 2. 載入中動畫 Tbody (Loading Spinner) -->
               <tbody id="patent-loading-tbody" class="hidden">
                 <tr>
-                  <td colspan="4" class="py-16 px-6 text-center">
+                  <td colspan="3" class="py-16 px-6 text-center">
                     <div class="flex flex-col items-center justify-center space-y-3">
                       <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                       <div class="space-y-1">
@@ -1069,7 +1044,7 @@
   <footer class="bg-white border-t border-slate-200 mt-8 py-4">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
       <div class="flex items-center space-x-2">
-        <span class="font-semibold text-slate-700">US Patent Chemical Structure Search System v4.1</span>
+        <span class="font-semibold text-slate-700">US Patent Chemical Structure Search System v4.2</span>
         <span>·</span>
         <span>Powered by JSME Molecular Editor &amp; PubChem PUG REST API</span>
       </div>
@@ -1110,10 +1085,7 @@
       activeTab: 'all',       // 'all' | 'granted' | 'applications'
       filterQuery: '',        // 專利號搜尋字串
       filteredList: [],       // 經過 Tab 與搜尋框過濾後的陣列
-      currentPage: 1,
-      detailsCache: {},       // 快取由後端 /api/patent_details 抓回的專利 Meta 資訊 { [patentId]: { title, assignee, date, abstract, ... } }
-      expandedAbstracts: {},  // 紀錄目前已點擊展開完整摘要的專利編號 { [patentId]: true }
-      backendAvailable: null  // 紀錄本地 FastAPI 後端是否連線正常
+      currentPage: 1
     };
 
     // 四組快速測試標準分子與核心骨架
@@ -2045,7 +2017,7 @@
         // 篩選以 US 開頭的專利編號（不分大小寫）
         if (!/^US/i.test(rawId)) continue;
 
-        // 關鍵修正：將 PubChem 回傳編號中的 "-" 移除 (例如 US-2014178487-A1 修改為 US2014178487A1)
+        // 將 PubChem 回傳編號中的 "-" 移除 (例如 US-2014178487-A1 修改為 US2014178487A1)
         const normalizedId = normalizeUsPatentId(rawId);
         if (!normalizedId || seen.has(normalizedId)) continue;
         seen.add(normalizedId);
@@ -2190,12 +2162,11 @@
     }
 
     /**
-     * 渲染當前分頁的 50 筆美國專利列，並針對本頁前 10 筆自動呼叫後端 /api/patent_details
+     * 渲染當前分頁的 50 筆美國專利列（3 欄配置：# / 美國專利編號 & 類型 / 外部專利資料庫檢視）
      */
     function renderCurrentPatentPage() {
       const tbody = document.getElementById('patent-populated-tbody');
       const paginationBar = document.getElementById('patent-pagination-bar');
-      const metaFetchBar = document.getElementById('patent-meta-fetch-bar');
       if (!tbody) return;
 
       const totalCount = patentState.filteredList.length;
@@ -2210,10 +2181,9 @@
 
       if (totalCount === 0) {
         if (paginationBar) paginationBar.classList.add('hidden');
-        if (metaFetchBar) metaFetchBar.classList.add('hidden');
         tbody.innerHTML = `
           <tr>
-            <td colspan="4" class="py-12 px-6 text-center text-slate-500">
+            <td colspan="3" class="py-12 px-6 text-center text-slate-500">
               <p class="text-sm font-bold text-slate-700">目前分類或過濾條件下查無符合的美國專利</p>
               <p class="text-xs text-slate-400 mt-1">請嘗試切換上方頁籤（全部 / 公告專利 / 公開申請案）或清除專利號搜尋關鍵字。</p>
             </td>
@@ -2244,19 +2214,18 @@
       document.getElementById('btn-next-page').disabled = patentState.currentPage >= totalPages;
       document.getElementById('btn-last-page').disabled = patentState.currentPage >= totalPages;
 
-      // 渲染表格列：顯示與網址皆使用已移除 "-" 的專利編號（例如 US2014178487A1）
+      // 渲染表格列：僅顯示「#」、「美國專利編號 & 類型」與「外部專利資料庫檢視」
       tbody.innerHTML = pageItems.map((item, idx) => {
         const globalRank = startIndex + idx + 1;
-        const isTop10OnPage = idx < 10;
         const isGranted = item.category === 'granted';
         const cleanPatentId = normalizeUsPatentId(item.id);
 
         const categoryBadge = isGranted
-          ? `<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          ? `<span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                <span>${item.kindLabel}</span>
              </span>`
-          : `<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+          : `<span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                <span>${item.kindLabel}</span>
              </span>`;
@@ -2267,29 +2236,27 @@
         const usptoUrl = `https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/${usptoPdfNumber}`;
 
         return `
-          <tr class="hover:bg-blue-50/40 transition align-top group">
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-400 font-semibold">
+          <tr class="hover:bg-blue-50/40 transition items-center group">
+            <td class="py-3.5 px-5 font-mono text-xs text-slate-400 font-semibold">
               ${globalRank}
-              ${isTop10OnPage ? '<span class="block text-[9px] font-mono text-indigo-600 bg-indigo-50 px-1 py-0.2 rounded mt-0.5 w-fit">Top 10</span>' : ''}
             </td>
-            <td class="py-3.5 px-4">
-              <div class="font-mono font-bold text-sm text-lab-900">${cleanPatentId}</div>
-              <div class="mt-1">${categoryBadge}</div>
+            <td class="py-3.5 px-5">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <span class="font-mono font-bold text-sm text-lab-900">${cleanPatentId}</span>
+                ${categoryBadge}
+              </div>
             </td>
-            <td class="py-3.5 px-4" id="patent-meta-cell-${cleanPatentId}">
-              ${renderPatentMetaCellContent(cleanPatentId, isTop10OnPage)}
-            </td>
-            <td class="py-3.5 px-4 text-right whitespace-nowrap">
-              <div class="inline-flex flex-col sm:flex-row items-end sm:items-center justify-end gap-1.5">
+            <td class="py-3.5 px-5 text-right whitespace-nowrap">
+              <div class="inline-flex flex-wrap items-center justify-end gap-2">
                 <a
                   href="${googlePatentsUrl}"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 transition shadow-sm"
+                  class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 transition shadow-sm"
                   title="開啟 ${googlePatentsUrl}"
                 >
                   <span>Google Patents 查看</span>
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                   </svg>
                 </a>
@@ -2297,11 +2264,11 @@
                   href="${usptoUrl}"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-200 transition shadow-sm"
+                  class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-200 transition shadow-sm"
                   title="開啟 ${usptoUrl}"
                 >
                   <span>USPTO 專利局查看</span>
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   </svg>
                 </a>
@@ -2310,220 +2277,6 @@
           </tr>
         `;
       }).join('');
-
-      fetchCurrentPageTop10PatentDetails(false);
-    }
-
-    function escapeHtmlStr(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    function renderPatentMetaCellContent(patentId, isTop10OnPage) {
-      const cleanId = normalizeUsPatentId(patentId);
-      const meta = patentState.detailsCache[cleanId];
-
-      if (meta && !meta.loading) {
-        const isExpanded = Boolean(patentState.expandedAbstracts[cleanId]);
-        const safeTitle = escapeHtmlStr(meta.title || '（無標題資訊）');
-        const safeAssignee = escapeHtmlStr(meta.assignee || '未記載申請人');
-        const safeDate = escapeHtmlStr(meta.date || '—');
-        const safeAbstract = escapeHtmlStr(meta.abstract || '無公開摘要');
-
-        return `
-          <div class="space-y-1.5">
-            <div class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-              ${safeTitle}
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 text-[11px]">
-              <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">
-                <svg class="w-3 h-3 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                </svg>
-                <span>申請人：<strong class="text-slate-900">${safeAssignee}</strong></span>
-              </span>
-
-              <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-blue-50/70 text-blue-800 border border-blue-200/70 font-mono">
-                <svg class="w-3 h-3 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                <span>日期：${safeDate}</span>
-              </span>
-            </div>
-
-            <div
-              onclick="togglePatentAbstract('${cleanId}')"
-              class="cursor-pointer group/abs bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/80 hover:border-indigo-200 rounded-lg p-2.5 transition"
-              title="點擊展開或收合完整專利摘要"
-            >
-              <div class="flex items-center justify-between text-[11px] font-semibold text-indigo-700 mb-1">
-                <span>專利摘要 (DC.description)</span>
-                <span class="inline-flex items-center space-x-1 underline underline-offset-2">
-                  <span>${isExpanded ? '收合摘要 ▲' : '點擊展開完整摘要 ▼'}</span>
-                </span>
-              </div>
-              <p class="text-xs text-slate-600 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}">
-                ${safeAbstract}
-              </p>
-            </div>
-          </div>
-        `;
-      }
-
-      if (meta && meta.loading) {
-        return `
-          <div class="space-y-2 py-1">
-            <div class="flex items-center space-x-2 text-xs text-indigo-700 font-medium">
-              <span class="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0"></span>
-              <span>正在從後端 <code class="font-mono">/api/patent_details</code> 解析 Google Patents Meta 標籤...</span>
-            </div>
-            <div class="h-4 w-3/4 rounded skeleton-shimmer"></div>
-            <div class="h-3 w-1/2 rounded skeleton-shimmer"></div>
-          </div>
-        `;
-      }
-
-      return `
-        <div class="flex items-center justify-between gap-2 py-1">
-          <span class="text-xs text-slate-400">
-            ${isTop10OnPage ? '等待後端載入專利標題、申請人與摘要...' : '（預設自動抓取本頁前 10 筆專利詳情）'}
-          </span>
-          <button
-            type="button"
-            onclick="fetchSinglePatentDetailFromBackend('${cleanId}')"
-            class="text-xs font-semibold text-indigo-700 hover:text-white bg-indigo-50 hover:bg-indigo-600 px-2.5 py-1 rounded-lg border border-indigo-200 transition shrink-0"
-          >
-            載入此筆專利摘要
-          </button>
-        </div>
-      `;
-    }
-
-    function togglePatentAbstract(patentId) {
-      const cleanId = normalizeUsPatentId(patentId);
-      patentState.expandedAbstracts[cleanId] = !patentState.expandedAbstracts[cleanId];
-      const cell = document.getElementById(`patent-meta-cell-${cleanId}`);
-      if (cell) {
-        cell.innerHTML = renderPatentMetaCellContent(cleanId, true);
-      }
-    }
-
-    /**
-     * 針對當前頁面顯示的前 10 筆美國專利，呼叫 FastAPI 後端 `/api/patent_details?patent_ids=US...,US...`
-     */
-    async function fetchCurrentPageTop10PatentDetails(forceRefresh = false) {
-      const startIndex = (patentState.currentPage - 1) * PATENTS_PER_PAGE;
-      const top10Items = patentState.filteredList.slice(startIndex, startIndex + 10);
-      if (top10Items.length === 0) return;
-
-      const top10Ids = top10Items.map(item => normalizeUsPatentId(item.id));
-      const idsToFetch = forceRefresh
-        ? top10Ids
-        : top10Ids.filter(id => !patentState.detailsCache[id] || patentState.detailsCache[id].loading);
-
-      const metaFetchBar = document.getElementById('patent-meta-fetch-bar');
-      const metaSpinner = document.getElementById('patent-meta-spinner');
-      const metaStatusText = document.getElementById('patent-meta-status-text');
-
-      if (metaFetchBar) metaFetchBar.classList.remove('hidden');
-
-      if (idsToFetch.length === 0) {
-        if (metaSpinner) metaSpinner.classList.add('hidden');
-        if (metaStatusText) {
-          metaStatusText.innerHTML = `✓ 已載入本頁前 ${top10Ids.length} 筆美國專利之標題、申請人 (Assignee)、日期與摘要（點擊摘要區塊可展開全文）。`;
-        }
-        return;
-      }
-
-      idsToFetch.forEach(id => {
-        patentState.detailsCache[id] = { loading: true };
-        const cell = document.getElementById(`patent-meta-cell-${id}`);
-        if (cell) cell.innerHTML = renderPatentMetaCellContent(id, true);
-      });
-
-      if (metaSpinner) metaSpinner.classList.remove('hidden');
-      if (metaStatusText) {
-        metaStatusText.innerHTML = `正在呼叫後端 <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-indigo-200 text-indigo-700">/api/patent_details?patent_ids=${idsToFetch.slice(0, 3).join(',')}...</code> 抓取本頁前 ${top10Ids.length} 筆專利詳情...`;
-      }
-
-      try {
-        const apiUrl = `/api/patent_details?patent_ids=${encodeURIComponent(idsToFetch.join(','))}`;
-        const response = await fetch(apiUrl);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        const resultsMap = data?.results || {};
-
-        updateFastApiStatusBadge(true, 'FastAPI 後端已連線');
-
-        idsToFetch.forEach(id => {
-          if (resultsMap[id]) {
-            patentState.detailsCache[id] = resultsMap[id];
-          } else {
-            patentState.detailsCache[id] = {
-              patent_id: id,
-              title: '無法取得此專利標題',
-              assignee: '—',
-              date: '—',
-              abstract: '查無公開摘要資料。',
-              fetched: false
-            };
-          }
-          const cell = document.getElementById(`patent-meta-cell-${id}`);
-          if (cell) cell.innerHTML = renderPatentMetaCellContent(id, true);
-        });
-
-        if (metaSpinner) metaSpinner.classList.add('hidden');
-        if (metaStatusText) {
-          metaStatusText.innerHTML = `✓ 已透過 FastAPI (<code class="font-mono">httpx + BeautifulSoup4</code>) 完成本頁前 ${top10Ids.length} 筆 Google Patents Meta 標籤解析。`;
-        }
-      } catch (err) {
-        console.warn('呼叫本地 FastAPI /api/patent_details 失敗:', err);
-        updateFastApiStatusBadge(false, '請啟動 python app.py');
-
-        idsToFetch.forEach(id => {
-          delete patentState.detailsCache[id];
-          const cell = document.getElementById(`patent-meta-cell-${id}`);
-          if (cell) cell.innerHTML = renderPatentMetaCellContent(id, true);
-        });
-
-        if (metaSpinner) metaSpinner.classList.add('hidden');
-        if (metaStatusText) {
-          metaStatusText.innerHTML = `⚠️ 尚未偵測到本地 FastAPI 後端 (<code class="font-mono">/api/patent_details</code>)。請在終端機執行 <code class="font-mono font-bold text-indigo-900">uvicorn app:app --reload</code> 後點擊右方重新整理。`;
-        }
-      }
-    }
-
-    async function fetchSinglePatentDetailFromBackend(patentId) {
-      const cleanId = normalizeUsPatentId(patentId);
-      patentState.detailsCache[cleanId] = { loading: true };
-      const cell = document.getElementById(`patent-meta-cell-${cleanId}`);
-      if (cell) cell.innerHTML = renderPatentMetaCellContent(cleanId, false);
-
-      try {
-        const response = await fetch(`/api/patent_details?patent_ids=${encodeURIComponent(cleanId)}`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        const detail = data?.results?.[cleanId];
-        if (detail) {
-          patentState.detailsCache[cleanId] = detail;
-          updateFastApiStatusBadge(true, 'FastAPI 後端已連線');
-        } else {
-          delete patentState.detailsCache[cleanId];
-        }
-      } catch (err) {
-        delete patentState.detailsCache[cleanId];
-        updateFastApiStatusBadge(false, '請啟動 python app.py');
-      }
-
-      if (cell) cell.innerHTML = renderPatentMetaCellContent(cleanId, false);
     }
 
     function goToPatentPage(pageNum) {
@@ -2561,10 +2314,6 @@
         '美國專利編號 (Patent ID)',
         '專利類型 (Patent Type)',
         '專利分類明細 (Category Detail)',
-        '專利標題 (DC.title)',
-        '申請人 (Assignee)',
-        '專利日期 (DC.date)',
-        '專利摘要 (DC.description)',
         '對應化合物 CID (PubChem CID)',
         '化學結構 SMILES',
         'InChIKey',
@@ -2577,16 +2326,11 @@
         const cleanPatentId = normalizeUsPatentId(item.id);
         const patentType = item.category === 'granted' ? 'Granted' : 'Application';
         const googlePatentsUrl = `https://patents.google.com/patent/${cleanPatentId}/en`;
-        const cachedMeta = patentState.detailsCache[cleanPatentId] || {};
 
         rows.push([
           cleanPatentId,
           patentType,
           item.kindLabel,
-          cachedMeta.title || '',
-          cachedMeta.assignee || '',
-          cachedMeta.date || '',
-          cachedMeta.abstract || '',
           exportCid,
           exportSmiles,
           exportInchiKey,
@@ -2730,32 +2474,7 @@
       if (banner) banner.classList.add('hidden');
     }
 
-    function updateFastApiStatusBadge(isOnline, text) {
-      patentState.backendAvailable = isOnline;
-      const dot = document.getElementById('fastapi-status-dot');
-      const label = document.getElementById('fastapi-status-text');
-      if (!dot || !label) return;
-      dot.className = isOnline
-        ? 'w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50'
-        : 'w-2 h-2 rounded-full bg-amber-400';
-      label.textContent = text;
-    }
-
-    async function checkFastApiBackendHealth() {
-      try {
-        const res = await fetch('/api/health');
-        if (res.ok) {
-          updateFastApiStatusBadge(true, 'FastAPI 後端已連線');
-        } else {
-          updateFastApiStatusBadge(false, 'FastAPI 未啟動');
-        }
-      } catch (e) {
-        updateFastApiStatusBadge(false, '靜態預覽模式 (未連後端)');
-      }
-    }
-
     window.addEventListener('DOMContentLoaded', () => {
-      checkFastApiBackendHealth();
       setTimeout(() => {
         if (!jsmeApplet) {
           updateJsmeStatusBadge(false, 'JSME 載入逾時');
